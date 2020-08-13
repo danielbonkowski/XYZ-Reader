@@ -59,12 +59,12 @@ public class ArticleListActivity extends AppCompatActivity implements
         mToolbar = (CollapsingToolbarLayout) findViewById(R.id.collapsingToolbar);
 
 
-        final View toolbarContainerView = findViewById(R.id.toolbar_container);
+        final View toolbarContainerView = findViewById(R.id.appBar);
         final LoaderManager.LoaderCallbacks context = this;
 
 
         mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_refresh_layout);
-        mSwipeRefreshLayout.setProgressViewOffset(false, 250, 250);
+        mSwipeRefreshLayout.setProgressViewOffset(false, 100, 100);
         mSwipeRefreshLayout.setColorSchemeResources(R.color.theme_accent);
         mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
