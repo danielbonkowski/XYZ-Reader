@@ -10,4 +10,6 @@
     <dimen name="logo_start_margin">16dp</dimen>
     <dimen name="logo_bottom_margin">16dp</dimen>
 
+    <dimen name="card_animation_offset">200dp</dimen>
+
 </resources>

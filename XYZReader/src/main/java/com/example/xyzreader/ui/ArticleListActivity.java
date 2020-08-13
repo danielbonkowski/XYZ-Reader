@@ -18,6 +18,8 @@ import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.TextView;
 
 import com.example.xyzreader.R;
@@ -44,6 +46,7 @@ public class ArticleListActivity extends AppCompatActivity implements
     private SwipeRefreshLayout mSwipeRefreshLayout;
     private RecyclerView mRecyclerView;
     private boolean mIsRefreshing = false;
+    private int mAnimatedViewPosition = -1;
 
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.sss");
     // Use default locale format
@@ -64,14 +67,13 @@ public class ArticleListActivity extends AppCompatActivity implements
 
 
         mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_refresh_layout);
-        mSwipeRefreshLayout.setProgressViewOffset(false, 100, 100);
+        mSwipeRefreshLayout.setProgressViewOffset(false, 50, 50);
         mSwipeRefreshLayout.setColorSchemeResources(R.color.theme_accent);
         mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
                 mIsRefreshing = true;
                 updateRefreshingUI();
-                mRecyclerView.setAdapter(null);
                 getLoaderManager().restartLoader(0, null, context);
             }
         });
@@ -144,7 +146,6 @@ public class ArticleListActivity extends AppCompatActivity implements
 
     @Override
     public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
-
         return ArticleLoader.newAllArticlesInstance(this);
     }
 
@@ -160,6 +161,7 @@ public class ArticleListActivity extends AppCompatActivity implements
         mIsRefreshing = false;
         updateRefreshingUI();
     }
+
 
     @Override
     public void onLoaderReset(Loader<Cursor> loader) {
@@ -231,7 +233,9 @@ public class ArticleListActivity extends AppCompatActivity implements
                     mCursor.getString(ArticleLoader.Query.THUMB_URL),
                     ImageLoaderHelper.getInstance(ArticleListActivity.this).getImageLoader());
             holder.thumbnailView.setAspectRatio(mCursor.getFloat(ArticleLoader.Query.ASPECT_RATIO));
+            
         }
+
 
         @Override
         public int getItemCount() {
