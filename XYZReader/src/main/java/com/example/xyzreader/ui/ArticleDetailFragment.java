@@ -150,7 +150,6 @@ public class ArticleDetailFragment extends Fragment implements
             }
         });
 
-        bindViews();
         updateStatusBar();
         return mRootView;
     }
@@ -203,7 +202,7 @@ public class ArticleDetailFragment extends Fragment implements
         TextView titleView = (TextView) mRootView.findViewById(R.id.article_title);
         TextView bylineView = (TextView) mRootView.findViewById(R.id.article_byline);
         bylineView.setMovementMethod(new LinkMovementMethod());
-        TextView bodyView = (TextView) mRootView.findViewById(R.id.article_body);
+        final TextView bodyView = (TextView) mRootView.findViewById(R.id.article_body);
 
 
         bodyView.setTypeface(Typeface.createFromAsset(getResources().getAssets(), "Rosario-Regular.ttf"));
@@ -232,7 +231,17 @@ public class ArticleDetailFragment extends Fragment implements
                                 + "</font>"));
 
             }
-            bodyView.setText(Html.fromHtml(mCursor.getString(ArticleLoader.Query.BODY).replaceAll("(\r\n|\n)", "<br />")));
+
+
+            bodyView.post(new Runnable() {
+                @Override
+                public void run() {
+                    if(mCursor != null){
+                        bodyView.setText(Html.fromHtml(mCursor.getString(ArticleLoader.Query.BODY).replaceAll("(\r\n|\n)", "<br />")));
+                    }
+                }
+            });
+
             ImageLoaderHelper.getInstance(getActivity()).getImageLoader()
                     .get(mCursor.getString(ArticleLoader.Query.PHOTO_URL), new ImageLoader.ImageListener() {
                         @Override
@@ -288,7 +297,6 @@ public class ArticleDetailFragment extends Fragment implements
     @Override
     public void onLoaderReset(Loader<Cursor> cursorLoader) {
         mCursor = null;
-        bindViews();
     }
 
     public int getUpButtonFloor() {
