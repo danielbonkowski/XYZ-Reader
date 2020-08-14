@@ -121,12 +121,12 @@ public class ArticleDetailActivity extends AppCompatActivity
         // Select the start ID
         if (mStartId > 0) {
             // TODO: optimize
-            mPager.post(new Runnable() {
+            mPager.postDelayed(new Runnable() {
                 @Override
                 public void run() {
                     mPager.setCurrentItem((int) mStartId, false);
                 }
-            });
+            },200);
 
         }
 

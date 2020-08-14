@@ -27,6 +27,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.android.volley.VolleyError;
@@ -60,6 +61,7 @@ public class ArticleDetailFragment extends Fragment implements
     private int mScrollY;
     private boolean mIsCard = false;
     private int mStatusBarFullOpacityBottom;
+    private ProgressBar mTextProgressBar;
 
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.sss");
     // Use default locale format
@@ -150,12 +152,16 @@ public class ArticleDetailFragment extends Fragment implements
             }
         });
 
+        mTextProgressBar = (ProgressBar) mRootView.findViewById(R.id.text_progress_bar);
+
+
+        bindViews();
         updateStatusBar();
         return mRootView;
     }
 
     private void updateStatusBar() {
-        int color = 0;
+        /*int color = 0;
         if (mPhotoView != null && mTopInset != 0 && mScrollY > 0) {
             float f = progress(mScrollY,
                     mStatusBarFullOpacityBottom - mTopInset * 3,
@@ -166,7 +172,7 @@ public class ArticleDetailFragment extends Fragment implements
                     (int) (Color.blue(mMutedColor) * 0.9));
         }
         mStatusBarColorDrawable.setColor(color);
-        mDrawInsetsFrameLayout.setInsetBackground(mStatusBarColorDrawable);
+        mDrawInsetsFrameLayout.setInsetBackground(mStatusBarColorDrawable);*/
     }
 
     static float progress(float v, float min, float max) {
@@ -208,9 +214,9 @@ public class ArticleDetailFragment extends Fragment implements
         bodyView.setTypeface(Typeface.createFromAsset(getResources().getAssets(), "Rosario-Regular.ttf"));
 
         if (mCursor != null) {
-            mRootView.setAlpha(0);
+            //mRootView.setAlpha(0);
             mRootView.setVisibility(View.VISIBLE);
-            mRootView.animate().alpha(1);
+            //mRootView.animate().alpha(1);
             titleView.setText(mCursor.getString(ArticleLoader.Query.TITLE));
             Date publishedDate = parsePublishedDate();
             if (!publishedDate.before(START_OF_EPOCH.getTime())) {
@@ -232,14 +238,21 @@ public class ArticleDetailFragment extends Fragment implements
 
             }
 
-
+            mTextProgressBar.setVisibility(View.VISIBLE);
+            bodyView.setVisibility(View.INVISIBLE);
             bodyView.post(new Runnable() {
                 @Override
                 public void run() {
                     if(mCursor != null){
-                        bodyView.setText(Html.fromHtml(mCursor.getString(ArticleLoader.Query.BODY).replaceAll("(\r\n|\n)", "<br />")));
+
+                        //bodyView.setText(Html.fromHtml(mCursor.getString(ArticleLoader.Query.BODY).replaceAll("(\r\n|\n)", "<br />")));
+                        bodyView.setText("Hello there pal!");
+
+                        mTextProgressBar.setVisibility(View.GONE);
+                        bodyView.setVisibility(View.VISIBLE);
                     }
                 }
+
             });
 
             ImageLoaderHelper.getInstance(getActivity()).getImageLoader()
