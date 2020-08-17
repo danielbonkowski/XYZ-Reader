@@ -29,6 +29,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatTextView;
 import androidx.core.app.ShareCompat;
+import androidx.core.text.PrecomputedTextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.loader.app.LoaderManager;
 import androidx.loader.content.Loader;
@@ -349,9 +350,15 @@ public class ArticleDetailFragment extends Fragment implements
         public void onBindViewHolder(TextAdapterViewHolder holder, int position) {
             String bodyText = mCursor.getString(ArticleLoader.Query.BODY);
             String[] bodyTextArray = bodyText.split("(\r\n|\n)");
+            holder.appCompatTextView.setTextFuture(
+                    PrecomputedTextCompat.getTextFuture(
+                            bodyTextArray[position],
+                            holder.appCompatTextView.getTextMetricsParamsCompat(),
+                            null
+                    )
+            );
 
-
-            holder.appCompatTextView.setText(bodyTextArray[position]);
+            //holder.appCompatTextView.setText(bodyTextArray[position]);
         }
 
         @Override
