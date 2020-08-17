@@ -70,6 +70,13 @@ public class ArticleDetailFragment extends Fragment implements
     private int mStatusBarFullOpacityBottom;
     private ProgressBar mTextProgressBar;
     private RecyclerView mTextRecyclerView;
+    private String mBodyText;
+    private int mNrOfItems;
+    private String[] mBodyTextArray;
+
+    private TextView mTitleView;
+    private TextView mBylineView;
+    private RecyclerView mRecyclerView;
 
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.sss");
     // Use default locale format
@@ -104,6 +111,8 @@ public class ArticleDetailFragment extends Fragment implements
         mStatusBarFullOpacityBottom = getResources().getDimensionPixelSize(
                 R.dimen.detail_card_top_margin);
         setHasOptionsMenu(true);
+
+
     }
 
     public ArticleDetailActivity getActivityCast() {
@@ -163,6 +172,17 @@ public class ArticleDetailFragment extends Fragment implements
         mTextProgressBar = (ProgressBar) mRootView.findViewById(R.id.text_progress_bar);
         mTextRecyclerView = (RecyclerView) mRootView.findViewById(R.id.article_body_recycler_view);
 
+
+        mTitleView = (TextView) mRootView.findViewById(R.id.article_title);
+        mBylineView = (TextView) mRootView.findViewById(R.id.article_byline);
+        mBylineView.setMovementMethod(new LinkMovementMethod());
+        mRecyclerView = (RecyclerView) mRootView.findViewById(R.id.article_body_recycler_view);
+        TextAdapter textAdapter = new TextAdapter();
+        mRecyclerView.setAdapter(textAdapter);
+        RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false);
+        mRecyclerView.setLayoutManager(layoutManager);
+
+
         bindViews();
         updateStatusBar();
         return mRootView;
@@ -213,26 +233,16 @@ public class ArticleDetailFragment extends Fragment implements
             return;
         }
 
-        TextView titleView = (TextView) mRootView.findViewById(R.id.article_title);
-        TextView bylineView = (TextView) mRootView.findViewById(R.id.article_byline);
-        bylineView.setMovementMethod(new LinkMovementMethod());
-        final RecyclerView bodyRecyclerView = (RecyclerView) mRootView.findViewById(R.id.article_body_recycler_view);
-        TextAdapter textAdapter = new TextAdapter();
-        bodyRecyclerView.setAdapter(textAdapter);
-        RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false);
-        bodyRecyclerView.setLayoutManager(layoutManager);
-
-
         //bodyView.setTypeface(Typeface.createFromAsset(getResources().getAssets(), "Rosario-Regular.ttf"));
 
         if (mCursor != null) {
             //mRootView.setAlpha(0);
             mRootView.setVisibility(View.VISIBLE);
             //mRootView.animate().alpha(1);
-            titleView.setText(mCursor.getString(ArticleLoader.Query.TITLE));
+            mTitleView.setText(mCursor.getString(ArticleLoader.Query.TITLE));
             Date publishedDate = parsePublishedDate();
             if (!publishedDate.before(START_OF_EPOCH.getTime())) {
-                bylineView.setText(Html.fromHtml(
+                mBylineView.setText(Html.fromHtml(
                         DateUtils.getRelativeTimeSpanString(
                                 publishedDate.getTime(),
                                 System.currentTimeMillis(), DateUtils.HOUR_IN_MILLIS,
@@ -243,30 +253,15 @@ public class ArticleDetailFragment extends Fragment implements
 
             } else {
                 // If date is before 1902, just show the string
-                bylineView.setText(Html.fromHtml(
+                mBylineView.setText(Html.fromHtml(
                         outputFormat.format(publishedDate) + " by <font color='#ffffff'>"
                         + mCursor.getString(ArticleLoader.Query.AUTHOR)
                                 + "</font>"));
 
             }
 
-            mTextProgressBar.setVisibility(View.VISIBLE);
+            //mTextProgressBar.setVisibility(View.VISIBLE);
 
-            /*bodyView.setVisibility(View.INVISIBLE);
-            bodyView.post(new Runnable() {
-                @Override
-                public void run() {
-                    if(mCursor != null){
-
-                        bodyView.setText(Html.fromHtml(mCursor.getString(ArticleLoader.Query.BODY).replaceAll("(\r\n|\n)", "<br />")));
-                        //bodyView.setText("Hello there pal!");
-
-                        mTextProgressBar.setVisibility(View.GONE);
-                        bodyView.setVisibility(View.VISIBLE);
-                    }
-                }
-
-            });*/
 
             ImageLoaderHelper.getInstance(getActivity()).getImageLoader()
                     .get(mCursor.getString(ArticleLoader.Query.PHOTO_URL), new ImageLoader.ImageListener() {
@@ -288,10 +283,11 @@ public class ArticleDetailFragment extends Fragment implements
 
                         }
                     });
+
         } else {
             mRootView.setVisibility(View.GONE);
-            titleView.setText("N/A");
-            bylineView.setText("N/A" );
+            mTitleView.setText("N/A");
+            mBylineView.setText("N/A" );
             //bodyView.setText("N/A");
         }
     }
@@ -311,6 +307,12 @@ public class ArticleDetailFragment extends Fragment implements
         }
 
         mCursor = cursor;
+        /*if(mCursor != null && mCursor.getCount() > 0){
+                mBodyText = mCursor.getString(ArticleLoader.Query.BODY);
+                mBodyTextArray = mBodyText.split("(\r\n|\n)");
+                mNrOfItems = mBodyTextArray.length;
+        }*/
+
         if (mCursor != null && !mCursor.moveToFirst()) {
             Log.e(TAG, "Error reading item detail cursor");
             mCursor.close();
@@ -339,6 +341,8 @@ public class ArticleDetailFragment extends Fragment implements
 
     private class TextAdapter extends RecyclerView.Adapter<TextAdapter.TextAdapterViewHolder>{
 
+
+
         @Override
         public TextAdapter.TextAdapterViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             View view = getActivity().getLayoutInflater().inflate(R.layout.list_item_text, parent, false);
@@ -348,17 +352,17 @@ public class ArticleDetailFragment extends Fragment implements
 
         @Override
         public void onBindViewHolder(TextAdapterViewHolder holder, int position) {
-            String bodyText = mCursor.getString(ArticleLoader.Query.BODY);
-            String[] bodyTextArray = bodyText.split("(\r\n|\n)");
+
+
             holder.appCompatTextView.setTextFuture(
                     PrecomputedTextCompat.getTextFuture(
-                            bodyTextArray[position],
+                            "Hello",//mBodyTextArray[position]"",
                             holder.appCompatTextView.getTextMetricsParamsCompat(),
                             null
                     )
             );
 
-            //holder.appCompatTextView.setText(bodyTextArray[position]);
+
         }
 
         @Override
@@ -366,12 +370,14 @@ public class ArticleDetailFragment extends Fragment implements
             if(mCursor == null){
                 return 0;
             }
-            return mCursor.getString(ArticleLoader.Query.BODY).split("(\r\n|\n)").length;
+            return 1;
         }
 
         public class TextAdapterViewHolder extends RecyclerView.ViewHolder{
 
             AppCompatTextView appCompatTextView;
+
+
 
             public TextAdapterViewHolder(View itemView) {
                 super(itemView);

@@ -1,14 +1,15 @@
 package com.example.xyzreader.ui;
 
-import android.content.Loader;
 import android.database.Cursor;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.TypedValue;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
+import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -38,6 +39,7 @@ public class ArticleDetailActivity extends AppCompatActivity
     private MyPagerAdapter mPagerAdapter;
     private View mUpButtonContainer;
     private View mUpButton;
+    private FrameLayout mFragmentContainer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,32 +53,6 @@ public class ArticleDetailActivity extends AppCompatActivity
 
         getSupportLoaderManager().initLoader(1, null, this);
 
-        mPager = (ViewPager) findViewById(R.id.pager);
-        mPagerAdapter = new MyPagerAdapter(getSupportFragmentManager());
-        mPager.setAdapter(mPagerAdapter);
-        mPager.setPageMargin((int) TypedValue
-               .applyDimension(TypedValue.COMPLEX_UNIT_DIP, 1, getResources().getDisplayMetrics()));
-        mPager.setPageMarginDrawable(new ColorDrawable(0x22000000));
-
-        mPager.setOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
-            @Override
-            public void onPageScrollStateChanged(int state) {
-                super.onPageScrollStateChanged(state);
-                mUpButton.animate()
-                        .alpha((state == ViewPager.SCROLL_STATE_IDLE) ? 1f : 0f)
-                        .setDuration(100);
-            }
-
-            @Override
-            public void onPageSelected(int position) {
-                if (mCursor != null) {
-                    mCursor.moveToPosition(position);
-                }
-                mSelectedItemId = mCursor.getLong(ArticleLoader.Query._ID);
-                updateUpButtonPosition();
-            }
-        });
-
         mUpButtonContainer = findViewById(R.id.up_container);
 
         mUpButton = findViewById(R.id.action_up);
@@ -84,6 +60,14 @@ public class ArticleDetailActivity extends AppCompatActivity
             @Override
             public void onClick(View view) {
                 onSupportNavigateUp();
+            }
+        });
+
+        mFragmentContainer = findViewById(R.id.fragment_container);
+        mFragmentContainer.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                motionEvent.
             }
         });
 
@@ -116,17 +100,15 @@ public class ArticleDetailActivity extends AppCompatActivity
     @Override
     public void onLoadFinished(@NonNull androidx.loader.content.Loader<Cursor> loader, Cursor cursor) {
         mCursor = cursor;
-        mPagerAdapter.notifyDataSetChanged();
 
         // Select the start ID
         if (mStartId > 0) {
-            // TODO: optimize
-            mPager.post(new Runnable() {
-                @Override
-                public void run() {
-                    mPager.setCurrentItem((int) mStartId, false);
-                }
-            });
+            FragmentManager fragmentManager = getSupportFragmentManager();
+            mCursor.moveToFirst();
+            Fragment fragment = ArticleDetailFragment.newInstance(mCursor.getLong(ArticleLoader.Query._ID));
+            fragmentManager.beginTransaction()
+                    .add(R.id.fragment_container , fragment)
+                    .commit();
 
         }
     }
@@ -134,7 +116,6 @@ public class ArticleDetailActivity extends AppCompatActivity
     @Override
     public void onLoaderReset(@NonNull androidx.loader.content.Loader<Cursor> loader) {
         mCursor = null;
-        mPagerAdapter.notifyDataSetChanged();
     }
 
 
