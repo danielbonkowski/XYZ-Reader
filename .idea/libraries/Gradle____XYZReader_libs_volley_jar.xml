@@ -1,5 +1,5 @@
 <component name="libraryTable">
-  <library name="Gradle: __local_jars__:C.\Udacity\Material\xyz-reader-starter-code-master\XYZReader\libs\volley.jar:unspecified@jar">
+  <library name="Gradle: ./XYZReader/libs/volley.jar">
     <CLASSES>
       <root url="jar://$PROJECT_DIR$/XYZReader/libs/volley.jar!/" />
     </CLASSES>

@@ -81,7 +81,7 @@
                             android:textColor="#8fff" />
                     </LinearLayout>
 
-                    <android.support.v7.widget.RecyclerView
+                    <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/article_body_recycler_view"
                         style="?android:attr/textAppearanceMedium"
                         android:layout_width="match_parent"
