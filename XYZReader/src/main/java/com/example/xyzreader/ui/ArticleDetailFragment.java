@@ -6,9 +6,7 @@ import android.content.Intent;
 import android.content.Loader;
 import android.database.Cursor;
 import android.graphics.Bitmap;
-import android.graphics.Color;
 import android.graphics.Rect;
-import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 
 import java.text.ParseException;
@@ -16,9 +14,14 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.GregorianCalendar;
 
+
 import android.os.Bundle;
+import android.support.v4.text.PrecomputetTextCompat;
 import android.support.v4.app.ShareCompat;
 import android.support.v7.graphics.Palette;
+import android.support.v7.widget.AppCompatTextView;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.text.Html;
 import android.text.format.DateUtils;
 import android.text.method.LinkMovementMethod;
@@ -62,6 +65,7 @@ public class ArticleDetailFragment extends Fragment implements
     private boolean mIsCard = false;
     private int mStatusBarFullOpacityBottom;
     private ProgressBar mTextProgressBar;
+    private RecyclerView mTextRecyclerView;
 
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.sss");
     // Use default locale format
@@ -153,7 +157,7 @@ public class ArticleDetailFragment extends Fragment implements
         });
 
         mTextProgressBar = (ProgressBar) mRootView.findViewById(R.id.text_progress_bar);
-
+        mTextRecyclerView = (RecyclerView) mRootView.findViewById(R.id.article_body_recycler_view);
 
         bindViews();
         updateStatusBar();
@@ -208,10 +212,14 @@ public class ArticleDetailFragment extends Fragment implements
         TextView titleView = (TextView) mRootView.findViewById(R.id.article_title);
         TextView bylineView = (TextView) mRootView.findViewById(R.id.article_byline);
         bylineView.setMovementMethod(new LinkMovementMethod());
-        final TextView bodyView = (TextView) mRootView.findViewById(R.id.article_body);
+        final RecyclerView bodyRecyclerView = (RecyclerView) mRootView.findViewById(R.id.article_body_recycler_view);
+        TextAdapter textAdapter = new TextAdapter();
+        bodyRecyclerView.setAdapter(textAdapter);
+        RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false);
+        bodyRecyclerView.setLayoutManager(layoutManager);
 
 
-        bodyView.setTypeface(Typeface.createFromAsset(getResources().getAssets(), "Rosario-Regular.ttf"));
+        //bodyView.setTypeface(Typeface.createFromAsset(getResources().getAssets(), "Rosario-Regular.ttf"));
 
         if (mCursor != null) {
             //mRootView.setAlpha(0);
@@ -239,21 +247,22 @@ public class ArticleDetailFragment extends Fragment implements
             }
 
             mTextProgressBar.setVisibility(View.VISIBLE);
-            bodyView.setVisibility(View.INVISIBLE);
+
+            /*bodyView.setVisibility(View.INVISIBLE);
             bodyView.post(new Runnable() {
                 @Override
                 public void run() {
                     if(mCursor != null){
 
-                        //bodyView.setText(Html.fromHtml(mCursor.getString(ArticleLoader.Query.BODY).replaceAll("(\r\n|\n)", "<br />")));
-                        bodyView.setText("Hello there pal!");
+                        bodyView.setText(Html.fromHtml(mCursor.getString(ArticleLoader.Query.BODY).replaceAll("(\r\n|\n)", "<br />")));
+                        //bodyView.setText("Hello there pal!");
 
                         mTextProgressBar.setVisibility(View.GONE);
                         bodyView.setVisibility(View.VISIBLE);
                     }
                 }
 
-            });
+            });*/
 
             ImageLoaderHelper.getInstance(getActivity()).getImageLoader()
                     .get(mCursor.getString(ArticleLoader.Query.PHOTO_URL), new ImageLoader.ImageListener() {
@@ -279,7 +288,7 @@ public class ArticleDetailFragment extends Fragment implements
             mRootView.setVisibility(View.GONE);
             titleView.setText("N/A");
             bylineView.setText("N/A" );
-            bodyView.setText("N/A");
+            //bodyView.setText("N/A");
         }
     }
 
@@ -321,5 +330,41 @@ public class ArticleDetailFragment extends Fragment implements
         return mIsCard
                 ? (int) mPhotoContainerView.getTranslationY() + mPhotoView.getHeight() - mScrollY
                 : mPhotoView.getHeight() - mScrollY;
+    }
+
+    private class TextAdapter extends RecyclerView.Adapter<TextAdapter.TextAdapterViewHolder>{
+
+        @Override
+        public TextAdapter.TextAdapterViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            View view = getActivity().getLayoutInflater().inflate(R.layout.list_item_text, parent, false);
+            TextAdapterViewHolder textAdapterViewHolder = new TextAdapterViewHolder(view);
+            return textAdapterViewHolder;
+        }
+
+        @Override
+        public void onBindViewHolder(TextAdapterViewHolder holder, int position) {
+            String bodyText = mCursor.getString(ArticleLoader.Query.BODY);
+            String[] bodyTextArray = bodyText.split("(\r\n|\n)");
+
+            holder.appCompatTextView.setText(bodyTextArray[position]);
+        }
+
+        @Override
+        public int getItemCount() {
+            if(mCursor == null){
+                return 0;
+            }
+            return mCursor.getString(ArticleLoader.Query.BODY).split("(\r\n|\n)").length;
+        }
+
+        public class TextAdapterViewHolder extends RecyclerView.ViewHolder{
+
+            AppCompatTextView appCompatTextView;
+
+            public TextAdapterViewHolder(View itemView) {
+                super(itemView);
+                appCompatTextView = (AppCompatTextView) itemView.findViewById(R.id.list_item_text);
+            }
+        }
     }
 }

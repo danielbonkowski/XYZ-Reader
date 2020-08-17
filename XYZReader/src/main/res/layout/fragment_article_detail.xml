@@ -81,8 +81,8 @@
                             android:textColor="#8fff" />
                     </LinearLayout>
 
-                    <TextView
-                        android:id="@+id/article_body"
+                    <android.support.v7.widget.RecyclerView
+                        android:id="@+id/article_body_recycler_view"
                         style="?android:attr/textAppearanceMedium"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -100,8 +100,8 @@
                     android:layout_width="50dp"
                     android:layout_height="50dp"
                     android:layout_gravity="bottom|center"
-                    android:layout_marginBottom="24dp"
-                    android:visibility="visible"
+                    android:layout_marginBottom="343dp"
+                    android:visibility="gone"
                     android:elevation="10dp"/>
             </FrameLayout>
 
