@@ -22,10 +22,12 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.widget.ScrollView;
 
+import androidx.core.widget.NestedScrollView;
+
 /**
  * A custom ScrollView that can accept a scroll listener.
  */
-public class ObservableScrollView extends ScrollView {
+public class ObservableScrollView extends NestedScrollView {
     private Callbacks mCallbacks;
 
     public ObservableScrollView(Context context, AttributeSet attrs) {

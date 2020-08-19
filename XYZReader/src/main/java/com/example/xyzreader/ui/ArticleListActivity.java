@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.Loader;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.text.Html;
@@ -45,6 +44,7 @@ public class ArticleListActivity extends AppCompatActivity implements
     private CollapsingToolbarLayout mToolbar;
     private SwipeRefreshLayout mSwipeRefreshLayout;
     private RecyclerView mRecyclerView;
+    private Adapter mAdapter;
     private boolean mIsRefreshing = false;
     private int mAnimatedViewPosition = -1;
 
@@ -72,23 +72,19 @@ public class ArticleListActivity extends AppCompatActivity implements
         mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                mIsRefreshing = true;
-                updateRefreshingUI();
                 getSupportLoaderManager().restartLoader(0, null, context);
+
+                mAdapter.notifyDataSetChanged();
+                mIsRefreshing = false;
+                updateRefreshingUI();
             }
         });
 
 
 
 
-
-
         mRecyclerView = (RecyclerView) findViewById(R.id.books_recycler_view);
         mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
-                super.onScrollStateChanged(recyclerView, newState);
-            }
 
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
@@ -151,20 +147,19 @@ public class ArticleListActivity extends AppCompatActivity implements
 
     @Override
     public void onLoadFinished(@NonNull androidx.loader.content.Loader<Cursor> loader, Cursor cursor) {
-        Adapter adapter = new Adapter(cursor);
-        adapter.setHasStableIds(true);
-        mRecyclerView.setAdapter(adapter);
+        mAdapter = new Adapter(cursor);
+        mAdapter.setHasStableIds(true);
+        mRecyclerView.setAdapter(mAdapter);
         int columnCount = getResources().getInteger(R.integer.list_column_count);
         StaggeredGridLayoutManager sglm =
                 new StaggeredGridLayoutManager(columnCount, StaggeredGridLayoutManager.VERTICAL);
         mRecyclerView.setLayoutManager(sglm);
-        mIsRefreshing = false;
-        updateRefreshingUI();
+
     }
 
     @Override
     public void onLoaderReset(@NonNull androidx.loader.content.Loader<Cursor> loader) {
-        mRecyclerView.setAdapter(null);
+        //mRecyclerView.setAdapter(null);
     }
 
     private class Adapter extends RecyclerView.Adapter<ViewHolder> {

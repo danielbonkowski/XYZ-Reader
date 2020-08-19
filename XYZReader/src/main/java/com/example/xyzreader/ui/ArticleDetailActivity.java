@@ -1,11 +1,9 @@
 package com.example.xyzreader.ui;
 
 import android.database.Cursor;
-import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.os.Bundle;
-import android.util.TypedValue;
-import android.view.MotionEvent;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
@@ -26,11 +24,13 @@ import com.example.xyzreader.data.ArticleLoader;
  * An activity representing a single Article detail screen, letting you swipe between articles.
  */
 public class ArticleDetailActivity extends AppCompatActivity
-        implements LoaderManager.LoaderCallbacks<Cursor> {
+        implements LoaderManager.LoaderCallbacks<Cursor>,
+ArticleDetailFragment.SwipeListener{
 
     private Cursor mCursor;
-    private long mStartId;
+    private long mSelectedFragmentId;
 
+    private final String TAG = ArticleDetailActivity.class.getSimpleName();
     private long mSelectedItemId;
     private int mSelectedItemUpButtonFloor = Integer.MAX_VALUE;
     private int mTopInset;
@@ -40,6 +40,14 @@ public class ArticleDetailActivity extends AppCompatActivity
     private View mUpButtonContainer;
     private View mUpButton;
     private FrameLayout mFragmentContainer;
+
+    @Override
+    public void onAttachFragment(@NonNull Fragment fragment) {
+        if (fragment instanceof ArticleDetailFragment) {
+            ArticleDetailFragment articleDetailFragment = (ArticleDetailFragment) fragment;
+            articleDetailFragment.setSwipeListener(this);
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,12 +72,7 @@ public class ArticleDetailActivity extends AppCompatActivity
         });
 
         mFragmentContainer = findViewById(R.id.fragment_container);
-        mFragmentContainer.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View view, MotionEvent motionEvent) {
-                motionEvent.
-            }
-        });
+
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             mUpButtonContainer.setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
@@ -86,8 +89,8 @@ public class ArticleDetailActivity extends AppCompatActivity
 
         if (savedInstanceState == null) {
             if (getIntent() != null && getIntent().getExtras() != null) {
-                mStartId = getIntent().getLongExtra(ArticleListActivity.EXTRA_ARTICLE_ID, 2);
-                mSelectedItemId = mStartId;
+                mSelectedFragmentId = getIntent().getLongExtra(ArticleListActivity.EXTRA_ARTICLE_ID, 2);
+                mSelectedItemId = mSelectedFragmentId;
             }
         }
     }
@@ -102,9 +105,9 @@ public class ArticleDetailActivity extends AppCompatActivity
         mCursor = cursor;
 
         // Select the start ID
-        if (mStartId > 0) {
+        if (mSelectedFragmentId >= 0) {
             FragmentManager fragmentManager = getSupportFragmentManager();
-            mCursor.moveToFirst();
+            mCursor.moveToPosition((int) mSelectedFragmentId);
             Fragment fragment = ArticleDetailFragment.newInstance(mCursor.getLong(ArticleLoader.Query._ID));
             fragmentManager.beginTransaction()
                     .add(R.id.fragment_container , fragment)
@@ -130,6 +133,34 @@ public class ArticleDetailActivity extends AppCompatActivity
     private void updateUpButtonPosition() {
         int upButtonNormalBottom = mTopInset + mUpButton.getHeight();
         mUpButton.setTranslationY(Math.min(mSelectedItemUpButtonFloor - upButtonNormalBottom, 0));
+    }
+
+    @Override
+    public void swipeRight() {
+        Log.d(TAG, "Swipe left");
+        if(mSelectedFragmentId > 0){
+            --mSelectedFragmentId;
+            FragmentManager fragmentManager = getSupportFragmentManager();
+            mCursor.moveToPosition((int) mSelectedFragmentId);
+            Fragment fragment = ArticleDetailFragment.newInstance(mCursor.getLong(ArticleLoader.Query._ID));
+            fragmentManager.beginTransaction()
+                    .replace(R.id.fragment_container , fragment)
+                    .commit();
+        }
+    }
+
+    @Override
+    public void swipeLeft() {
+        Log.d(TAG, "Swipe left");
+        if(mCursor.getCount() - 1 > mSelectedFragmentId){
+            ++mSelectedFragmentId;
+            FragmentManager fragmentManager = getSupportFragmentManager();
+            mCursor.moveToPosition((int) mSelectedFragmentId);
+            Fragment fragment = ArticleDetailFragment.newInstance(mCursor.getLong(ArticleLoader.Query._ID));
+            fragmentManager.beginTransaction()
+                    .replace(R.id.fragment_container , fragment)
+                    .commit();
+        }
     }
 
     private class MyPagerAdapter extends FragmentStatePagerAdapter {

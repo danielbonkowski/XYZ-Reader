@@ -3,6 +3,7 @@ package com.example.xyzreader.ui;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.drawable.ColorDrawable;
 
@@ -20,8 +21,10 @@ import android.text.format.DateUtils;
 import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -73,6 +76,7 @@ public class ArticleDetailFragment extends Fragment implements
     private String mBodyText;
     private int mNrOfItems;
     private String[] mBodyTextArray;
+    private DrawInsetsFrameLayout mContainerFrameLayout;
 
     private TextView mTitleView;
     private TextView mBylineView;
@@ -83,12 +87,22 @@ public class ArticleDetailFragment extends Fragment implements
     private SimpleDateFormat outputFormat = new SimpleDateFormat();
     // Most time functions can only handle 1902 - 2037
     private GregorianCalendar START_OF_EPOCH = new GregorianCalendar(2,1,1);
+    private SwipeListener mSwipeListener;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
      * fragment (e.g. upon screen orientation changes).
      */
     public ArticleDetailFragment() {
+    }
+
+    public interface SwipeListener{
+        public void swipeRight();
+        public void swipeLeft();
+    }
+
+    public void setSwipeListener(SwipeListener swipeListener){
+        mSwipeListener = swipeListener;
     }
 
     public static ArticleDetailFragment newInstance(long itemId) {
@@ -134,6 +148,26 @@ public class ArticleDetailFragment extends Fragment implements
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
             Bundle savedInstanceState) {
         mRootView = inflater.inflate(R.layout.fragment_article_detail, container, false);
+        FrameLayout frameLayout = mRootView.findViewById(R.id.scrollview);
+        frameLayout.setOnTouchListener(new OnSwipeListener(getActivity()){
+            @Override
+            public void leftSwipe() {
+                Log.d(TAG, "Swipe left fragment");
+                mSwipeListener.swipeLeft();
+            }
+
+            @Override
+            public void rightSwipe() {
+                Log.d(TAG, "Swipe right fragment");
+                mSwipeListener.swipeRight();
+            }
+
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                Log.d(TAG, "Touch fragment");
+                return super.onTouch(view, motionEvent);
+            }
+        });
         mDrawInsetsFrameLayout = (DrawInsetsFrameLayout)
                 mRootView.findViewById(R.id.draw_insets_frame_layout);
         mDrawInsetsFrameLayout.setOnInsetsCallback(new DrawInsetsFrameLayout.OnInsetsCallback() {
@@ -189,7 +223,7 @@ public class ArticleDetailFragment extends Fragment implements
     }
 
     private void updateStatusBar() {
-        /*int color = 0;
+        int color = 0;
         if (mPhotoView != null && mTopInset != 0 && mScrollY > 0) {
             float f = progress(mScrollY,
                     mStatusBarFullOpacityBottom - mTopInset * 3,
@@ -200,7 +234,7 @@ public class ArticleDetailFragment extends Fragment implements
                     (int) (Color.blue(mMutedColor) * 0.9));
         }
         mStatusBarColorDrawable.setColor(color);
-        mDrawInsetsFrameLayout.setInsetBackground(mStatusBarColorDrawable);*/
+        mDrawInsetsFrameLayout.setInsetBackground(mStatusBarColorDrawable);
     }
 
     static float progress(float v, float min, float max) {
@@ -356,7 +390,7 @@ public class ArticleDetailFragment extends Fragment implements
 
             holder.appCompatTextView.setTextFuture(
                     PrecomputedTextCompat.getTextFuture(
-                            "Hello",//mBodyTextArray[position]"",
+                            "Hello very beautiful people",//mBodyTextArray[position]"",
                             holder.appCompatTextView.getTextMetricsParamsCompat(),
                             null
                     )
@@ -370,7 +404,7 @@ public class ArticleDetailFragment extends Fragment implements
             if(mCursor == null){
                 return 0;
             }
-            return 1;
+            return 100;
         }
 
         public class TextAdapterViewHolder extends RecyclerView.ViewHolder{
