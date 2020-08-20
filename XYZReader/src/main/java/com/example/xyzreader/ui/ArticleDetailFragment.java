@@ -13,6 +13,8 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 
 
+import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 
 
@@ -28,8 +30,10 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.widget.AppCompatTextView;
 import androidx.core.app.ShareCompat;
 import androidx.core.text.PrecomputedTextCompat;
@@ -51,7 +55,7 @@ import com.example.xyzreader.data.ArticleLoader;
  * tablets) or a {@link ArticleDetailActivity} on handsets.
  */
 public class ArticleDetailFragment extends Fragment implements
-        LoaderManager.LoaderCallbacks<Cursor> {
+        LoaderManager.LoaderCallbacks<Cursor>{
     private static final String TAG = "ArticleDetailFragment";
 
     public static final String ARG_ITEM_ID = "item_id";
@@ -73,8 +77,9 @@ public class ArticleDetailFragment extends Fragment implements
     private int mStatusBarFullOpacityBottom;
     private ProgressBar mTextProgressBar;
     private RecyclerView mTextRecyclerView;
-    private String mBodyText;
-    private int mNrOfItems;
+    private String mBodyText = "";
+    private int mMaxNrOfItemsInRecyclerView;
+    private int mCurrentNrOfItemsInRecyclerView = 100;
     private String[] mBodyTextArray;
     private DrawInsetsFrameLayout mContainerFrameLayout;
 
@@ -95,6 +100,7 @@ public class ArticleDetailFragment extends Fragment implements
      */
     public ArticleDetailFragment() {
     }
+
 
     public interface SwipeListener{
         public void swipeRight();
@@ -144,6 +150,7 @@ public class ArticleDetailFragment extends Fragment implements
         getLoaderManager().initLoader(2, null, this);
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
             Bundle savedInstanceState) {
@@ -185,6 +192,28 @@ public class ArticleDetailFragment extends Fragment implements
                 getActivityCast().onUpButtonFloorChanged(mItemId, ArticleDetailFragment.this);
                 mPhotoContainerView.setTranslationY((int) (mScrollY - mScrollY / PARALLAX_FACTOR));
                 updateStatusBar();
+
+                View view = (View) mScrollView.getChildAt(0);
+                int diff = view.getBottom() - (mScrollView.getHeight() + mScrollY);
+
+
+
+                if (diff == 0){
+                    if(mCurrentNrOfItemsInRecyclerView == mMaxNrOfItemsInRecyclerView){
+                        return;
+                    }else if(mCurrentNrOfItemsInRecyclerView + 10 > mMaxNrOfItemsInRecyclerView){
+                        mCurrentNrOfItemsInRecyclerView = mMaxNrOfItemsInRecyclerView;
+                    }else {
+                        mCurrentNrOfItemsInRecyclerView += 100;
+                    }
+
+
+                    mRecyclerView.getAdapter().notifyItemInserted(mCurrentNrOfItemsInRecyclerView);
+
+                    mRecyclerView.smoothScrollToPosition(mScrollY);
+
+                }
+
             }
         });
 
@@ -215,7 +244,6 @@ public class ArticleDetailFragment extends Fragment implements
         mRecyclerView.setAdapter(textAdapter);
         RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false);
         mRecyclerView.setLayoutManager(layoutManager);
-
 
         bindViews();
         updateStatusBar();
@@ -341,11 +369,7 @@ public class ArticleDetailFragment extends Fragment implements
         }
 
         mCursor = cursor;
-        /*if(mCursor != null && mCursor.getCount() > 0){
-                mBodyText = mCursor.getString(ArticleLoader.Query.BODY);
-                mBodyTextArray = mBodyText.split("(\r\n|\n)");
-                mNrOfItems = mBodyTextArray.length;
-        }*/
+        new ParseTextAsyncTask().execute(mCursor);
 
         if (mCursor != null && !mCursor.moveToFirst()) {
             Log.e(TAG, "Error reading item detail cursor");
@@ -375,7 +399,9 @@ public class ArticleDetailFragment extends Fragment implements
 
     private class TextAdapter extends RecyclerView.Adapter<TextAdapter.TextAdapterViewHolder>{
 
-
+        public void updateAdapter(){
+            this.notifyDataSetChanged();
+        }
 
         @Override
         public TextAdapter.TextAdapterViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
@@ -387,16 +413,15 @@ public class ArticleDetailFragment extends Fragment implements
         @Override
         public void onBindViewHolder(TextAdapterViewHolder holder, int position) {
 
-
-            holder.appCompatTextView.setTextFuture(
-                    PrecomputedTextCompat.getTextFuture(
-                            "Hello very beautiful people",//mBodyTextArray[position]"",
-                            holder.appCompatTextView.getTextMetricsParamsCompat(),
-                            null
-                    )
-            );
-
-
+            if(mBodyTextArray != null){
+                holder.appCompatTextView.setTextFuture(
+                        PrecomputedTextCompat.getTextFuture(
+                                mBodyTextArray[position].trim(),
+                                holder.appCompatTextView.getTextMetricsParamsCompat(),
+                                null
+                        )
+                );
+            }
         }
 
         @Override
@@ -404,19 +429,39 @@ public class ArticleDetailFragment extends Fragment implements
             if(mCursor == null){
                 return 0;
             }
-            return 100;
+            return mCurrentNrOfItemsInRecyclerView;
         }
 
-        public class TextAdapterViewHolder extends RecyclerView.ViewHolder{
+        public class TextAdapterViewHolder extends RecyclerView.ViewHolder {
 
             AppCompatTextView appCompatTextView;
-
-
 
             public TextAdapterViewHolder(View itemView) {
                 super(itemView);
                 appCompatTextView = (AppCompatTextView) itemView.findViewById(R.id.list_item_text);
             }
+        }
+    }
+
+    class ParseTextAsyncTask extends AsyncTask<Cursor, String, Void> {
+
+        @Override
+        protected Void doInBackground(Cursor... cursors) {
+            Cursor myCursor = cursors[0];
+            if (myCursor != null && myCursor.getCount() > 0 && mBodyText.isEmpty()){
+                myCursor.moveToFirst();
+                mBodyText = myCursor.getString(ArticleLoader.Query.BODY);
+                mBodyTextArray = mBodyText.split("(\r\n|\n)");
+                mMaxNrOfItemsInRecyclerView = mBodyTextArray.length;
+            }
+
+
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            mRecyclerView.getAdapter().notifyDataSetChanged();
         }
     }
 }

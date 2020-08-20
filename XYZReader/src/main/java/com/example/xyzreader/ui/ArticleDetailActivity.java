@@ -35,8 +35,6 @@ ArticleDetailFragment.SwipeListener{
     private int mSelectedItemUpButtonFloor = Integer.MAX_VALUE;
     private int mTopInset;
 
-    private ViewPager mPager;
-    private MyPagerAdapter mPagerAdapter;
     private View mUpButtonContainer;
     private View mUpButton;
     private FrameLayout mFragmentContainer;
@@ -132,7 +130,7 @@ ArticleDetailFragment.SwipeListener{
 
     private void updateUpButtonPosition() {
         int upButtonNormalBottom = mTopInset + mUpButton.getHeight();
-        mUpButton.setTranslationY(Math.min(mSelectedItemUpButtonFloor - upButtonNormalBottom, 0));
+        mUpButton.setTranslationY(Math.min(mSelectedItemUpButtonFloor - upButtonNormalBottom, 10));
     }
 
     @Override
@@ -142,7 +140,7 @@ ArticleDetailFragment.SwipeListener{
             --mSelectedFragmentId;
             FragmentManager fragmentManager = getSupportFragmentManager();
             mCursor.moveToPosition((int) mSelectedFragmentId);
-            Fragment fragment = ArticleDetailFragment.newInstance(mCursor.getLong(ArticleLoader.Query._ID));
+            ArticleDetailFragment fragment = ArticleDetailFragment.newInstance(mCursor.getLong(ArticleLoader.Query._ID));
             fragmentManager.beginTransaction()
                     .replace(R.id.fragment_container , fragment)
                     .commit();
@@ -156,37 +154,13 @@ ArticleDetailFragment.SwipeListener{
             ++mSelectedFragmentId;
             FragmentManager fragmentManager = getSupportFragmentManager();
             mCursor.moveToPosition((int) mSelectedFragmentId);
-            Fragment fragment = ArticleDetailFragment.newInstance(mCursor.getLong(ArticleLoader.Query._ID));
+            ArticleDetailFragment fragment = ArticleDetailFragment.newInstance(mCursor.getLong(ArticleLoader.Query._ID));
+            mSelectedItemUpButtonFloor = fragment.getUpButtonFloor();
+            onUpButtonFloorChanged(mSelectedItemId, fragment);
+            updateUpButtonPosition();
             fragmentManager.beginTransaction()
                     .replace(R.id.fragment_container , fragment)
                     .commit();
-        }
-    }
-
-    private class MyPagerAdapter extends FragmentStatePagerAdapter {
-        public MyPagerAdapter(FragmentManager fm) {
-            super(fm);
-        }
-
-        @Override
-        public void setPrimaryItem(ViewGroup container, int position, Object object) {
-            super.setPrimaryItem(container, position, object);
-            ArticleDetailFragment fragment = (ArticleDetailFragment) object;
-            if (fragment != null) {
-                mSelectedItemUpButtonFloor = fragment.getUpButtonFloor();
-                updateUpButtonPosition();
-            }
-        }
-
-        @Override
-        public Fragment getItem(int position) {
-            mCursor.moveToPosition(position);
-            return ArticleDetailFragment.newInstance(mCursor.getLong(ArticleLoader.Query._ID));
-        }
-
-        @Override
-        public int getCount() {
-            return (mCursor != null) ? mCursor.getCount() : 0;
         }
     }
 }
