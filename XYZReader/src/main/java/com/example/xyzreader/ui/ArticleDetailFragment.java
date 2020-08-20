@@ -135,6 +135,8 @@ public class ArticleDetailFragment extends Fragment implements
 
     }
 
+
+
     public ArticleDetailActivity getActivityCast() {
         return (ArticleDetailActivity) getActivity();
     }

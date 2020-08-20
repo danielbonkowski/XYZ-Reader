@@ -27,6 +27,9 @@ public class ArticleDetailActivity extends AppCompatActivity
         implements LoaderManager.LoaderCallbacks<Cursor>,
 ArticleDetailFragment.SwipeListener{
 
+    private final String STATE_SELECTED_ITEM_ID = "selected_item_id";
+
+
     private Cursor mCursor;
     private long mSelectedFragmentId;
 
@@ -90,6 +93,9 @@ ArticleDetailFragment.SwipeListener{
                 mSelectedFragmentId = getIntent().getLongExtra(ArticleListActivity.EXTRA_ARTICLE_ID, 2);
                 mSelectedItemId = mSelectedFragmentId;
             }
+        }else{
+            mSelectedItemId = savedInstanceState.getLong(STATE_SELECTED_ITEM_ID);
+            mSelectedFragmentId = mSelectedItemId;
         }
     }
 
@@ -119,7 +125,11 @@ ArticleDetailFragment.SwipeListener{
         mCursor = null;
     }
 
-
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        outState.putLong(STATE_SELECTED_ITEM_ID, mSelectedItemId);
+        super.onSaveInstanceState(outState);
+    }
 
     public void onUpButtonFloorChanged(long itemId, ArticleDetailFragment fragment) {
         if (itemId == mSelectedItemId) {
@@ -138,6 +148,7 @@ ArticleDetailFragment.SwipeListener{
         Log.d(TAG, "Swipe left");
         if(mSelectedFragmentId > 0){
             --mSelectedFragmentId;
+            --mSelectedItemId;
             FragmentManager fragmentManager = getSupportFragmentManager();
             mCursor.moveToPosition((int) mSelectedFragmentId);
             ArticleDetailFragment fragment = ArticleDetailFragment.newInstance(mCursor.getLong(ArticleLoader.Query._ID));
@@ -152,6 +163,7 @@ ArticleDetailFragment.SwipeListener{
         Log.d(TAG, "Swipe left");
         if(mCursor.getCount() - 1 > mSelectedFragmentId){
             ++mSelectedFragmentId;
+            ++mSelectedItemId;
             FragmentManager fragmentManager = getSupportFragmentManager();
             mCursor.moveToPosition((int) mSelectedFragmentId);
             ArticleDetailFragment fragment = ArticleDetailFragment.newInstance(mCursor.getLong(ArticleLoader.Query._ID));
