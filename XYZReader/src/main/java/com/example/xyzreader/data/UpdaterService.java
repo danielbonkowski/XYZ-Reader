@@ -62,10 +62,16 @@ public class UpdaterService extends IntentService {
             for (int i = 0; i < array.length(); i++) {
                 ContentValues values = new ContentValues();
                 JSONObject object = array.getJSONObject(i);
+
+                String fullText = object.getString("body");
+                fullText = fullText.replaceAll("\r\n\r\n", "\n\n");
+                fullText = fullText.replaceAll("\r\n", " ");
+
+                fullText = fullText.trim();
                 values.put(ItemsContract.Items.SERVER_ID, object.getString("id" ));
                 values.put(ItemsContract.Items.AUTHOR, object.getString("author" ));
                 values.put(ItemsContract.Items.TITLE, object.getString("title" ));
-                values.put(ItemsContract.Items.BODY, object.getString("body" ));
+                values.put(ItemsContract.Items.BODY, fullText);
                 values.put(ItemsContract.Items.THUMB_URL, object.getString("thumb" ));
                 values.put(ItemsContract.Items.PHOTO_URL, object.getString("photo" ));
                 values.put(ItemsContract.Items.ASPECT_RATIO, object.getString("aspect_ratio" ));

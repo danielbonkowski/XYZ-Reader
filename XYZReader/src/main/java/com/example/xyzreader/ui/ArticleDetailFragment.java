@@ -79,7 +79,7 @@ public class ArticleDetailFragment extends Fragment implements
     private RecyclerView mTextRecyclerView;
     private String mBodyText = "";
     private int mMaxNrOfItemsInRecyclerView;
-    private int mCurrentNrOfItemsInRecyclerView = 100;
+    private int mCurrentNrOfItemsInRecyclerView = 10;
     private String[] mBodyTextArray;
     private DrawInsetsFrameLayout mContainerFrameLayout;
 
@@ -206,13 +206,13 @@ public class ArticleDetailFragment extends Fragment implements
                     }else if(mCurrentNrOfItemsInRecyclerView + 10 > mMaxNrOfItemsInRecyclerView){
                         mCurrentNrOfItemsInRecyclerView = mMaxNrOfItemsInRecyclerView;
                     }else {
-                        mCurrentNrOfItemsInRecyclerView += 100;
+                        mCurrentNrOfItemsInRecyclerView += 10;
                     }
 
 
                     mRecyclerView.getAdapter().notifyItemInserted(mCurrentNrOfItemsInRecyclerView);
 
-                    mRecyclerView.smoothScrollToPosition(mScrollY);
+                    //mRecyclerView.smoothScrollToPosition(mScrollY);
 
                 }
 

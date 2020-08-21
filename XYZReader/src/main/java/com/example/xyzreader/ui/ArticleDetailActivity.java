@@ -34,7 +34,6 @@ ArticleDetailFragment.SwipeListener{
     private long mSelectedFragmentId;
 
     private final String TAG = ArticleDetailActivity.class.getSimpleName();
-    private long mSelectedItemId;
     private int mSelectedItemUpButtonFloor = Integer.MAX_VALUE;
     private int mTopInset;
 
@@ -60,7 +59,6 @@ ArticleDetailFragment.SwipeListener{
         }
         setContentView(R.layout.activity_article_detail);
 
-        getSupportLoaderManager().initLoader(1, null, this);
 
         mUpButtonContainer = findViewById(R.id.up_container);
 
@@ -91,11 +89,10 @@ ArticleDetailFragment.SwipeListener{
         if (savedInstanceState == null) {
             if (getIntent() != null && getIntent().getExtras() != null) {
                 mSelectedFragmentId = getIntent().getLongExtra(ArticleListActivity.EXTRA_ARTICLE_ID, 2);
-                mSelectedItemId = mSelectedFragmentId;
             }
+            getSupportLoaderManager().initLoader(1, null, this);
         }else{
-            mSelectedItemId = savedInstanceState.getLong(STATE_SELECTED_ITEM_ID);
-            mSelectedFragmentId = mSelectedItemId;
+            mSelectedFragmentId = savedInstanceState.getLong(STATE_SELECTED_ITEM_ID);
         }
     }
 
@@ -127,20 +124,19 @@ ArticleDetailFragment.SwipeListener{
 
     @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
-        outState.putLong(STATE_SELECTED_ITEM_ID, mSelectedItemId);
+        outState.putLong(STATE_SELECTED_ITEM_ID, mSelectedFragmentId);
+
         super.onSaveInstanceState(outState);
     }
 
     public void onUpButtonFloorChanged(long itemId, ArticleDetailFragment fragment) {
-        if (itemId == mSelectedItemId) {
-            mSelectedItemUpButtonFloor = fragment.getUpButtonFloor();
-            updateUpButtonPosition();
-        }
+        mSelectedItemUpButtonFloor = fragment.getUpButtonFloor();
+        updateUpButtonPosition();
     }
 
     private void updateUpButtonPosition() {
         int upButtonNormalBottom = mTopInset + mUpButton.getHeight();
-        mUpButton.setTranslationY(Math.min(mSelectedItemUpButtonFloor - upButtonNormalBottom, 10));
+        mUpButton.setTranslationY(Math.min(mSelectedItemUpButtonFloor - upButtonNormalBottom, 20));
     }
 
     @Override
@@ -148,10 +144,10 @@ ArticleDetailFragment.SwipeListener{
         Log.d(TAG, "Swipe left");
         if(mSelectedFragmentId > 0){
             --mSelectedFragmentId;
-            --mSelectedItemId;
             FragmentManager fragmentManager = getSupportFragmentManager();
             mCursor.moveToPosition((int) mSelectedFragmentId);
             ArticleDetailFragment fragment = ArticleDetailFragment.newInstance(mCursor.getLong(ArticleLoader.Query._ID));
+            mSelectedItemUpButtonFloor = fragment.getUpButtonFloor();
             fragmentManager.beginTransaction()
                     .replace(R.id.fragment_container , fragment)
                     .commit();
@@ -163,12 +159,10 @@ ArticleDetailFragment.SwipeListener{
         Log.d(TAG, "Swipe left");
         if(mCursor.getCount() - 1 > mSelectedFragmentId){
             ++mSelectedFragmentId;
-            ++mSelectedItemId;
             FragmentManager fragmentManager = getSupportFragmentManager();
             mCursor.moveToPosition((int) mSelectedFragmentId);
             ArticleDetailFragment fragment = ArticleDetailFragment.newInstance(mCursor.getLong(ArticleLoader.Query._ID));
             mSelectedItemUpButtonFloor = fragment.getUpButtonFloor();
-            onUpButtonFloorChanged(mSelectedItemId, fragment);
             updateUpButtonPosition();
             fragmentManager.beginTransaction()
                     .replace(R.id.fragment_container , fragment)
