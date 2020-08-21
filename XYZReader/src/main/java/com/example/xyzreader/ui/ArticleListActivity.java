@@ -15,6 +15,8 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.Observer;
 import androidx.loader.app.LoaderManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
@@ -113,23 +115,23 @@ public class ArticleListActivity extends AppCompatActivity /*implements
                 new StaggeredGridLayoutManager(columnCount, StaggeredGridLayoutManager.VERTICAL);
         mRecyclerView.setLayoutManager(sglm);
 
+        retrieveBooks();
+
         //getSupportLoaderManager().initLoader(0, null, this);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        AppExecutors.getInstance().diskIO().execute(new Runnable() {
-            @Override
-            public void run() {
-                final List<Book> books = mDb.bookDao().loadAllBooks();
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        mAdapter.setBooks(books);
-                    }
-                });
+    }
 
+    private void retrieveBooks() {
+        final LiveData<List<Book>> books = mDb.bookDao().loadAllBooks();
+        books.observe(this, new Observer<List<Book>>() {
+            @Override
+            public void onChanged(List<Book> books) {
+                Log.d(TAG, "Receiving database update from LiveData");
+                mAdapter.setBooks(books);
             }
         });
     }
@@ -164,35 +166,10 @@ public class ArticleListActivity extends AppCompatActivity /*implements
     };
 
     private void updateRefreshingUI() {
-        mSwipeRefreshLayout.post(new Runnable() {
-            @Override
-            public void run() {
-                mSwipeRefreshLayout.setRefreshing(mIsRefreshing);
-            }
-        });
-    }
-
-    /*@Override
-    public androidx.loader.content.Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
-        return ArticleLoader.newAllArticlesInstance(this);
-    }
-
-    @Override
-    public void onLoadFinished(@NonNull androidx.loader.content.Loader<Cursor> loader, List<Book> books) {
-        mAdapter = new Adapter(books);
-        mAdapter.setHasStableIds(true);
-        mRecyclerView.setAdapter(mAdapter);
-        int columnCount = getResources().getInteger(R.integer.list_column_count);
-        StaggeredGridLayoutManager sglm =
-                new StaggeredGridLayoutManager(columnCount, StaggeredGridLayoutManager.VERTICAL);
-        mRecyclerView.setLayoutManager(sglm);
+        mSwipeRefreshLayout.setRefreshing(mIsRefreshing);
     }
 
 
-    @Override
-    public void onLoaderReset(@NonNull androidx.loader.content.Loader<Cursor> loader) {
-        mRecyclerView.setAdapter(null);
-    }*/
 
     private class Adapter extends RecyclerView.Adapter<ViewHolder> {
         private List<Book> mBooks;

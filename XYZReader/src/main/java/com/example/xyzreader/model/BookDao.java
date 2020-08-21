@@ -1,5 +1,6 @@
 package com.example.xyzreader.model;
 
+import androidx.lifecycle.LiveData;
 import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
@@ -13,7 +14,7 @@ import java.util.List;
 public interface BookDao {
 
     @Query("SELECT * FROM book ORDER BY published_date DESC")
-    List<Book> loadAllBooks();
+    LiveData<List<Book>> loadAllBooks();
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertBook(Book book);
@@ -25,5 +26,5 @@ public interface BookDao {
     void deleteBook(Book book);
 
     @Query("SELECT * FROM book WHERE id = :id")
-    Book loadBookById(int id);
+    LiveData<Book> loadBookById(int id);
 }
