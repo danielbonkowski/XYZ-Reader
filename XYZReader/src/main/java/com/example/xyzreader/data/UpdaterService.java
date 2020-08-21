@@ -13,6 +13,7 @@ import android.text.format.Time;
 import android.util.Log;
 
 import com.example.xyzreader.model.AppDatabase;
+import com.example.xyzreader.model.AppExecutors;
 import com.example.xyzreader.model.Book;
 import com.example.xyzreader.remote.RemoteEndpointUtil;
 
@@ -30,7 +31,7 @@ public class UpdaterService extends IntentService {
     public static final String EXTRA_REFRESHING
             = "com.example.xyzreader.intent.extra.REFRESHING";
 
-    AppDatabase mDb = AppDatabase.getInstance(getApplicationContext());
+    AppDatabase mDb;
 
     public UpdaterService() {
         super(TAG);
@@ -46,6 +47,7 @@ public class UpdaterService extends IntentService {
             Log.w(TAG, "Not online, not refreshing.");
             return;
         }
+        mDb = AppDatabase.getInstance(getApplicationContext());
 
         sendStickyBroadcast(new Intent(BROADCAST_ACTION_STATE_CHANGE).putExtra(EXTRA_REFRESHING, true));
 
@@ -71,12 +73,20 @@ public class UpdaterService extends IntentService {
                 fullText = fullText.replaceAll("\r\n\r\n", "\n\n");
                 fullText = fullText.replaceAll("\r\n", " ");
 
-                Book book = new Book(Integer.valueOf(object.getString("id" )), object.getString("title" ),
+
+
+                final Book book = new Book(Integer.valueOf(object.getString("id" )), object.getString("title" ),
                         object.getString("author"),fullText, object.getString("thumb" ),
-                        object.getString("photo" ), Float.valueOf(object.getString("aspect_radio" )),
+                        object.getString("photo" ), Float.valueOf(object.getString("aspect_ratio" )),
                         object.getString("published_date" ));
 
-                mDb.bookDao().insertBook(book);
+                AppExecutors.getInstance().diskIO().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        mDb.bookDao().insertBook(book);
+                    }
+                });
+
 
                 fullText = fullText.trim();
                 values.put(ItemsContract.Items.SERVER_ID, object.getString("id" ));

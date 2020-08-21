@@ -23,12 +23,16 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.example.xyzreader.R;
 import com.example.xyzreader.data.ArticleLoader;
 import com.example.xyzreader.data.UpdaterService;
+import com.example.xyzreader.model.AppDatabase;
+import com.example.xyzreader.model.AppExecutors;
+import com.example.xyzreader.model.Book;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.List;
 
 /**
  * An activity representing a list of Articles. This activity has different presentations for
@@ -36,8 +40,8 @@ import java.util.GregorianCalendar;
  * touched, lead to a {@link ArticleDetailActivity} representing item details. On tablets, the
  * activity presents a grid of items as cards.
  */
-public class ArticleListActivity extends AppCompatActivity implements
-        androidx.loader.app.LoaderManager.LoaderCallbacks<Cursor> {
+public class ArticleListActivity extends AppCompatActivity /*implements
+        androidx.loader.app.LoaderManager.LoaderCallbacks<Cursor>*/ {
 
     private static final String TAG = ArticleListActivity.class.toString();
     public static final String EXTRA_ARTICLE_ID = "extra_article_id";
@@ -47,6 +51,7 @@ public class ArticleListActivity extends AppCompatActivity implements
     private Adapter mAdapter;
     private boolean mIsRefreshing = false;
     private int mAnimatedViewPosition = -1;
+    private AppDatabase mDb;
 
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.sss");
     // Use default locale format
@@ -60,10 +65,11 @@ public class ArticleListActivity extends AppCompatActivity implements
         setContentView(R.layout.activity_article_list);
 
         mToolbar = (CollapsingToolbarLayout) findViewById(R.id.collapsingToolbar);
+        mDb = AppDatabase.getInstance(getApplicationContext());
 
 
         final View toolbarContainerView = findViewById(R.id.appBar);
-        final LoaderManager.LoaderCallbacks context = this;
+        //final LoaderManager.LoaderCallbacks context = this;
 
 
         mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_refresh_layout);
@@ -72,7 +78,7 @@ public class ArticleListActivity extends AppCompatActivity implements
         mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                getSupportLoaderManager().restartLoader(0, null, context);
+                //getSupportLoaderManager().restartLoader(0, null, context);
 
                 mAdapter.notifyDataSetChanged();
                 mIsRefreshing = false;
@@ -99,7 +105,33 @@ public class ArticleListActivity extends AppCompatActivity implements
             refresh();
         }
 
-        getSupportLoaderManager().initLoader(0, null, this);
+        mAdapter = new Adapter(null);
+        mAdapter.setHasStableIds(true);
+        mRecyclerView.setAdapter(mAdapter);
+        int columnCount = getResources().getInteger(R.integer.list_column_count);
+        StaggeredGridLayoutManager sglm =
+                new StaggeredGridLayoutManager(columnCount, StaggeredGridLayoutManager.VERTICAL);
+        mRecyclerView.setLayoutManager(sglm);
+
+        //getSupportLoaderManager().initLoader(0, null, this);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        AppExecutors.getInstance().diskIO().execute(new Runnable() {
+            @Override
+            public void run() {
+                final List<Book> books = mDb.bookDao().loadAllBooks();
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        mAdapter.setBooks(books);
+                    }
+                });
+
+            }
+        });
     }
 
     private void refresh() {
@@ -140,41 +172,45 @@ public class ArticleListActivity extends AppCompatActivity implements
         });
     }
 
-    @Override
+    /*@Override
     public androidx.loader.content.Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
         return ArticleLoader.newAllArticlesInstance(this);
     }
 
     @Override
-    public void onLoadFinished(@NonNull androidx.loader.content.Loader<Cursor> loader, Cursor cursor) {
-        mAdapter = new Adapter(cursor);
+    public void onLoadFinished(@NonNull androidx.loader.content.Loader<Cursor> loader, List<Book> books) {
+        mAdapter = new Adapter(books);
         mAdapter.setHasStableIds(true);
         mRecyclerView.setAdapter(mAdapter);
         int columnCount = getResources().getInteger(R.integer.list_column_count);
         StaggeredGridLayoutManager sglm =
                 new StaggeredGridLayoutManager(columnCount, StaggeredGridLayoutManager.VERTICAL);
         mRecyclerView.setLayoutManager(sglm);
-
     }
 
-    
+
     @Override
     public void onLoaderReset(@NonNull androidx.loader.content.Loader<Cursor> loader) {
         mRecyclerView.setAdapter(null);
-    }
+    }*/
 
     private class Adapter extends RecyclerView.Adapter<ViewHolder> {
-        private Cursor mCursor;
+        private List<Book> mBooks;
+        private int mPosition;
 
-        public Adapter(Cursor cursor) {
-            mCursor = cursor;
+        public Adapter(List<Book> books) {
+            mBooks = books;
         }
 
+        public void setBooks(List<Book> books){
+            mBooks = books;
+            mAdapter.notifyDataSetChanged();
+        }
 
         @Override
         public long getItemId(int position) {
-            mCursor.moveToPosition(position);
-            return mCursor.getLong(ArticleLoader.Query._ID);
+            mPosition = position;
+            return  mBooks.get(position).getId();
         }
 
         @Override
@@ -195,7 +231,7 @@ public class ArticleListActivity extends AppCompatActivity implements
 
         private Date parsePublishedDate() {
             try {
-                String date = mCursor.getString(ArticleLoader.Query.PUBLISHED_DATE);
+                String date = mBooks.get(mPosition).getPublishedDate();
                 return dateFormat.parse(date);
             } catch (ParseException ex) {
                 Log.e(TAG, ex.getMessage());
@@ -206,8 +242,8 @@ public class ArticleListActivity extends AppCompatActivity implements
 
         @Override
         public void onBindViewHolder(ViewHolder holder, int position) {
-            mCursor.moveToPosition(position);
-            holder.titleView.setText(mCursor.getString(ArticleLoader.Query.TITLE));
+            Book book = mBooks.get(position);
+            holder.titleView.setText(book.getTitle());
             Date publishedDate = parsePublishedDate();
             if (!publishedDate.before(START_OF_EPOCH.getTime())) {
 
@@ -217,24 +253,27 @@ public class ArticleListActivity extends AppCompatActivity implements
                                 System.currentTimeMillis(), DateUtils.HOUR_IN_MILLIS,
                                 DateUtils.FORMAT_ABBREV_ALL).toString()
                                 + "<br/>" + " by "
-                                + mCursor.getString(ArticleLoader.Query.AUTHOR)));
+                                + book.getAuthor()));
             } else {
                 holder.subtitleView.setText(Html.fromHtml(
                         outputFormat.format(publishedDate)
                         + "<br/>" + " by "
-                        + mCursor.getString(ArticleLoader.Query.AUTHOR)));
+                        + book.getAuthor()));
             }
             holder.thumbnailView.setImageUrl(
-                    mCursor.getString(ArticleLoader.Query.THUMB_URL),
+                    book.getThumbnailUrl(),
                     ImageLoaderHelper.getInstance(ArticleListActivity.this).getImageLoader());
-            holder.thumbnailView.setAspectRatio(mCursor.getFloat(ArticleLoader.Query.ASPECT_RATIO));
+            holder.thumbnailView.setAspectRatio(book.getAspectRatio());
 
         }
 
 
         @Override
         public int getItemCount() {
-            return mCursor.getCount();
+            if(mBooks == null){
+                return 0;
+            }
+            return mBooks.size();
         }
     }
 

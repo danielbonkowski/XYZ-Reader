@@ -15,7 +15,7 @@ public interface BookDao {
     @Query("SELECT * FROM book ORDER BY published_date DESC")
     List<Book> loadAllBooks();
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertBook(Book book);
 
     @Update(onConflict = OnConflictStrategy.REPLACE)
@@ -23,4 +23,7 @@ public interface BookDao {
 
     @Delete
     void deleteBook(Book book);
+
+    @Query("SELECT * FROM book WHERE id = :id")
+    Book loadBookById(int id);
 }
