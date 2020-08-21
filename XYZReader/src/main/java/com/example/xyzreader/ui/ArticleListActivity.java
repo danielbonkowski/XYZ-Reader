@@ -157,6 +157,7 @@ public class ArticleListActivity extends AppCompatActivity implements
 
     }
 
+    
     @Override
     public void onLoaderReset(@NonNull androidx.loader.content.Loader<Cursor> loader) {
         mRecyclerView.setAdapter(null);

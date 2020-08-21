@@ -12,6 +12,8 @@ import android.os.RemoteException;
 import android.text.format.Time;
 import android.util.Log;
 
+import com.example.xyzreader.model.AppDatabase;
+import com.example.xyzreader.model.Book;
 import com.example.xyzreader.remote.RemoteEndpointUtil;
 
 import org.json.JSONArray;
@@ -27,6 +29,8 @@ public class UpdaterService extends IntentService {
             = "com.example.xyzreader.intent.action.STATE_CHANGE";
     public static final String EXTRA_REFRESHING
             = "com.example.xyzreader.intent.extra.REFRESHING";
+
+    AppDatabase mDb = AppDatabase.getInstance(getApplicationContext());
 
     public UpdaterService() {
         super(TAG);
@@ -66,6 +70,13 @@ public class UpdaterService extends IntentService {
                 String fullText = object.getString("body");
                 fullText = fullText.replaceAll("\r\n\r\n", "\n\n");
                 fullText = fullText.replaceAll("\r\n", " ");
+
+                Book book = new Book(Integer.valueOf(object.getString("id" )), object.getString("title" ),
+                        object.getString("author"),fullText, object.getString("thumb" ),
+                        object.getString("photo" ), Float.valueOf(object.getString("aspect_radio" )),
+                        object.getString("published_date" ));
+
+                mDb.bookDao().insertBook(book);
 
                 fullText = fullText.trim();
                 values.put(ItemsContract.Items.SERVER_ID, object.getString("id" ));
