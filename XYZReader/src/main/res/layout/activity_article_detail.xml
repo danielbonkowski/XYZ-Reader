@@ -1,10 +1,10 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:id="@+id/root_container">
+    android:id="@+id/details_root_container">
 
     <FrameLayout
-        android:id="@+id/fragment_container"
+        android:id="@+id/details_fragment_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 

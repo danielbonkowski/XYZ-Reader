@@ -5,7 +5,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.widget.FrameLayout;
 
@@ -13,9 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentStatePagerAdapter;
 import androidx.loader.app.LoaderManager;
-import androidx.viewpager.widget.ViewPager;
 
 import com.example.xyzreader.R;
 import com.example.xyzreader.data.ArticleLoader;
@@ -70,7 +67,7 @@ ArticleDetailFragment.SwipeListener{
             }
         });
 
-        mFragmentContainer = findViewById(R.id.fragment_container);
+        mFragmentContainer = findViewById(R.id.details_fragment_container);
 
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -111,7 +108,7 @@ ArticleDetailFragment.SwipeListener{
             mCursor.moveToPosition((int) mSelectedFragmentId);
             Fragment fragment = ArticleDetailFragment.newInstance(mCursor.getLong(ArticleLoader.Query._ID));
             fragmentManager.beginTransaction()
-                    .add(R.id.fragment_container , fragment)
+                    .add(R.id.details_fragment_container, fragment)
                     .commit();
 
         }
@@ -149,7 +146,7 @@ ArticleDetailFragment.SwipeListener{
             ArticleDetailFragment fragment = ArticleDetailFragment.newInstance(mCursor.getLong(ArticleLoader.Query._ID));
             mSelectedItemUpButtonFloor = fragment.getUpButtonFloor();
             fragmentManager.beginTransaction()
-                    .replace(R.id.fragment_container , fragment)
+                    .replace(R.id.details_fragment_container, fragment)
                     .commit();
         }
     }
@@ -165,7 +162,7 @@ ArticleDetailFragment.SwipeListener{
             mSelectedItemUpButtonFloor = fragment.getUpButtonFloor();
             updateUpButtonPosition();
             fragmentManager.beginTransaction()
-                    .replace(R.id.fragment_container , fragment)
+                    .replace(R.id.details_fragment_container, fragment)
                     .commit();
         }
     }
