@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.database.Cursor;
 import android.os.Bundle;
 import android.text.Html;
 import android.text.format.DateUtils;
@@ -13,21 +12,18 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
-import androidx.loader.app.LoaderManager;
+import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.xyzreader.R;
-import com.example.xyzreader.data.ArticleLoader;
 import com.example.xyzreader.data.UpdaterService;
 import com.example.xyzreader.model.AppDatabase;
-import com.example.xyzreader.model.AppExecutors;
 import com.example.xyzreader.model.Book;
+import com.example.xyzreader.model.ReaderViewModel;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
 
 import java.text.ParseException;
@@ -115,7 +111,7 @@ public class ArticleListActivity extends AppCompatActivity /*implements
                 new StaggeredGridLayoutManager(columnCount, StaggeredGridLayoutManager.VERTICAL);
         mRecyclerView.setLayoutManager(sglm);
 
-        retrieveBooks();
+        setupViewModel();
 
         //getSupportLoaderManager().initLoader(0, null, this);
     }
@@ -125,12 +121,12 @@ public class ArticleListActivity extends AppCompatActivity /*implements
         super.onResume();
     }
 
-    private void retrieveBooks() {
-        final LiveData<List<Book>> books = mDb.bookDao().loadAllBooks();
-        books.observe(this, new Observer<List<Book>>() {
+    private void setupViewModel() {
+        ReaderViewModel viewModel = ViewModelProviders.of(this).get(ReaderViewModel.class);
+        viewModel.getBooks().observe(this, new Observer<List<Book>>() {
             @Override
             public void onChanged(List<Book> books) {
-                Log.d(TAG, "Receiving database update from LiveData");
+                Log.d(TAG, "Updating list of books from LiveData in ViewModel");
                 mAdapter.setBooks(books);
             }
         });
