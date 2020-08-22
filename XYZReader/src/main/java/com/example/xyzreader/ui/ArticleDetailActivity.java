@@ -17,6 +17,8 @@ import androidx.loader.app.LoaderManager;
 import com.example.xyzreader.R;
 import com.example.xyzreader.data.ArticleLoader;
 
+import static com.example.xyzreader.ui.ArticleListFragment.EXTRA_ARTICLE_ID;
+
 /**
  * An activity representing a single Article detail screen, letting you swipe between articles.
  */
@@ -85,7 +87,7 @@ ArticleDetailFragment.SwipeListener{
 
         if (savedInstanceState == null) {
             if (getIntent() != null && getIntent().getExtras() != null) {
-                mSelectedFragmentId = getIntent().getLongExtra(ArticleListActivity.EXTRA_ARTICLE_ID, 2);
+                mSelectedFragmentId = getIntent().getLongExtra(EXTRA_ARTICLE_ID, 2);
             }
             getSupportLoaderManager().initLoader(1, null, this);
         }else{

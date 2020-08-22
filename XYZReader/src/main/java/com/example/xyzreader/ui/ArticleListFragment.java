@@ -44,6 +44,7 @@ public class ArticleListFragment extends Fragment {
     private SwipeRefreshLayout mSwipeRefreshLayout;
     private RecyclerView mRecyclerView;
     private Adapter mAdapter;
+    private ReaderViewModel mModel;
     private boolean mIsRefreshing = false;
     private int mAnimatedViewPosition = -1;
     private AppDatabase mDb;
@@ -123,8 +124,8 @@ public class ArticleListFragment extends Fragment {
     }
 
     private void setupViewModel() {
-        ReaderViewModel viewModel = ViewModelProviders.of(getActivity()).get(ReaderViewModel.class);
-        viewModel.getBooks().observe(getActivity(), new Observer<List<Book>>() {
+        mModel = ViewModelProviders.of(getActivity()).get(ReaderViewModel.class);
+        mModel.getBooks().observe(getActivity(), new Observer<List<Book>>() {
             @Override
             public void onChanged(List<Book> books) {
                 Log.d(TAG, "Updating list of books from LiveData in ViewModel");
@@ -194,6 +195,7 @@ public class ArticleListFragment extends Fragment {
                 public void onClick(View view) {
                     Intent intent = new Intent(getActivity().getApplicationContext(), ArticleDetailActivity.class);
                     intent.putExtra(EXTRA_ARTICLE_ID, (long) mBooks.get(vh.getAdapterPosition()).getId());
+                    mModel.selectBook(mBooks.get(vh.getAdapterPosition()));
                     startActivity(intent);
                 }
             });

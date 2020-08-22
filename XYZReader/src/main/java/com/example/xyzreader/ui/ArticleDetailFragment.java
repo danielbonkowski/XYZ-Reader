@@ -48,6 +48,7 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageLoader;
 import com.example.xyzreader.R;
 import com.example.xyzreader.data.ArticleLoader;
+import com.example.xyzreader.model.ReaderViewModel;
 
 /**
  * A fragment representing a single Article detail screen. This fragment is
@@ -86,6 +87,7 @@ public class ArticleDetailFragment extends Fragment implements
     private TextView mTitleView;
     private TextView mBylineView;
     private RecyclerView mRecyclerView;
+    private ReaderViewModel mModel;
 
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.sss");
     // Use default locale format

@@ -16,6 +16,7 @@ public class ReaderViewModel extends AndroidViewModel {
     private static final String TAG = ReaderViewModel.class.getSimpleName();
 
     private LiveData<List<Book>> books;
+    private final MutableLiveData<Book> selectedBook = new MutableLiveData<Book>();
 
     public ReaderViewModel(@NonNull Application application) {
         super(application);
@@ -26,5 +27,13 @@ public class ReaderViewModel extends AndroidViewModel {
 
     public LiveData<List<Book>> getBooks(){
         return books;
+    }
+
+    public void selectBook(Book book){
+        selectedBook.setValue(book);
+    }
+
+    public LiveData<Book> getSelectedBook(){
+        return selectedBook;
     }
 }
