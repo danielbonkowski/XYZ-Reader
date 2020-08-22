@@ -194,8 +194,7 @@ public class ArticleListFragment extends Fragment {
                 @Override
                 public void onClick(View view) {
                     Intent intent = new Intent(getActivity().getApplicationContext(), ArticleDetailActivity.class);
-                    intent.putExtra(EXTRA_ARTICLE_ID, (long) mBooks.get(vh.getAdapterPosition()).getId());
-                    mModel.selectBook(mBooks.get(vh.getAdapterPosition()));
+                    intent.putExtra(EXTRA_ARTICLE_ID, (long) vh.getAdapterPosition());
                     startActivity(intent);
                 }
             });

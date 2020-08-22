@@ -1,5 +1,6 @@
 package com.example.xyzreader.ui;
 
+import android.content.Intent;
 import android.database.Cursor;
 import android.os.Build;
 import android.os.Bundle;
@@ -12,10 +13,16 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProviders;
 import androidx.loader.app.LoaderManager;
 
 import com.example.xyzreader.R;
 import com.example.xyzreader.data.ArticleLoader;
+import com.example.xyzreader.model.Book;
+import com.example.xyzreader.model.ReaderViewModel;
+
+import java.util.List;
 
 import static com.example.xyzreader.ui.ArticleListFragment.EXTRA_ARTICLE_ID;
 
@@ -23,18 +30,21 @@ import static com.example.xyzreader.ui.ArticleListFragment.EXTRA_ARTICLE_ID;
  * An activity representing a single Article detail screen, letting you swipe between articles.
  */
 public class ArticleDetailActivity extends AppCompatActivity
-        implements LoaderManager.LoaderCallbacks<Cursor>,
+        implements
 ArticleDetailFragment.SwipeListener{
 
     private final String STATE_SELECTED_ITEM_ID = "selected_item_id";
 
 
-    private Cursor mCursor;
     private long mSelectedFragmentId;
+    private ReaderViewModel mModel;
+    private Book mBook;
+    private List<Book> mBooks;
 
     private final String TAG = ArticleDetailActivity.class.getSimpleName();
     private int mSelectedItemUpButtonFloor = Integer.MAX_VALUE;
     private int mTopInset;
+    private final long DEFAULT_BOOK_ID = 1;
 
     private View mUpButtonContainer;
     private View mUpButton;
@@ -57,6 +67,11 @@ ArticleDetailFragment.SwipeListener{
                             View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
         }
         setContentView(R.layout.activity_article_detail);
+
+        Intent intent = getIntent();
+        long bookId = intent.getLongExtra(EXTRA_ARTICLE_ID, DEFAULT_BOOK_ID);
+
+
 
 
         mUpButtonContainer = findViewById(R.id.up_container);
@@ -89,37 +104,42 @@ ArticleDetailFragment.SwipeListener{
             if (getIntent() != null && getIntent().getExtras() != null) {
                 mSelectedFragmentId = getIntent().getLongExtra(EXTRA_ARTICLE_ID, 2);
             }
-            getSupportLoaderManager().initLoader(1, null, this);
         }else{
             mSelectedFragmentId = savedInstanceState.getLong(STATE_SELECTED_ITEM_ID);
         }
+
+
+
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        Fragment fragment = ArticleDetailFragment.newInstance(mSelectedFragmentId);
+        fragmentManager.beginTransaction()
+                .add(R.id.details_fragment_container, fragment)
+                .commit();
+
+        setupViewModel();
     }
 
-    @Override
-    public androidx.loader.content.Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
-        return ArticleLoader.newAllArticlesInstance(this);
+    private void setupViewModel() {
+        mModel = ViewModelProviders.of(this).get(ReaderViewModel.class);
+        mModel.getSelectedBook().observe(this, new Observer<Book>() {
+            @Override
+            public void onChanged(Book book) {
+                Log.d(TAG, "Updating selected book");
+                mBook = book;
+            }
+        });
+
+        mModel.getBooks().observe(this, new Observer<List<Book>>() {
+            @Override
+            public void onChanged(List<Book> books) {
+                Log.d(TAG, "Updating books data set");
+
+                mBooks = books;
+                mModel.selectBook(books.get((int)mSelectedFragmentId));
+            }
+        });
     }
 
-    @Override
-    public void onLoadFinished(@NonNull androidx.loader.content.Loader<Cursor> loader, Cursor cursor) {
-        mCursor = cursor;
-
-        // Select the start ID
-        if (mSelectedFragmentId >= 0) {
-            FragmentManager fragmentManager = getSupportFragmentManager();
-            mCursor.moveToPosition((int) mSelectedFragmentId);
-            Fragment fragment = ArticleDetailFragment.newInstance(mCursor.getLong(ArticleLoader.Query._ID));
-            fragmentManager.beginTransaction()
-                    .add(R.id.details_fragment_container, fragment)
-                    .commit();
-
-        }
-    }
-
-    @Override
-    public void onLoaderReset(@NonNull androidx.loader.content.Loader<Cursor> loader) {
-        mCursor = null;
-    }
 
     @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
@@ -144,8 +164,8 @@ ArticleDetailFragment.SwipeListener{
         if(mSelectedFragmentId > 0){
             --mSelectedFragmentId;
             FragmentManager fragmentManager = getSupportFragmentManager();
-            mCursor.moveToPosition((int) mSelectedFragmentId);
-            ArticleDetailFragment fragment = ArticleDetailFragment.newInstance(mCursor.getLong(ArticleLoader.Query._ID));
+            mModel.selectBook(mModel.getBooks().getValue().get((int)mSelectedFragmentId));
+            ArticleDetailFragment fragment = ArticleDetailFragment.newInstance(mBook.getId());
             mSelectedItemUpButtonFloor = fragment.getUpButtonFloor();
             fragmentManager.beginTransaction()
                     .replace(R.id.details_fragment_container, fragment)
@@ -156,11 +176,11 @@ ArticleDetailFragment.SwipeListener{
     @Override
     public void swipeLeft() {
         Log.d(TAG, "Swipe left");
-        if(mCursor.getCount() - 1 > mSelectedFragmentId){
+        if(mBooks.size() - 1 > mSelectedFragmentId){
             ++mSelectedFragmentId;
             FragmentManager fragmentManager = getSupportFragmentManager();
-            mCursor.moveToPosition((int) mSelectedFragmentId);
-            ArticleDetailFragment fragment = ArticleDetailFragment.newInstance(mCursor.getLong(ArticleLoader.Query._ID));
+            mModel.selectBook(mModel.getBooks().getValue().get((int) mSelectedFragmentId) );
+            ArticleDetailFragment fragment = ArticleDetailFragment.newInstance(mBook.getId());
             mSelectedItemUpButtonFloor = fragment.getUpButtonFloor();
             updateUpButtonPosition();
             fragmentManager.beginTransaction()

@@ -38,6 +38,9 @@ import androidx.appcompat.widget.AppCompatTextView;
 import androidx.core.app.ShareCompat;
 import androidx.core.text.PrecomputedTextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.lifecycle.ViewModelProviders;
 import androidx.loader.app.LoaderManager;
 import androidx.loader.content.Loader;
 import androidx.palette.graphics.Palette;
@@ -48,6 +51,7 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageLoader;
 import com.example.xyzreader.R;
 import com.example.xyzreader.data.ArticleLoader;
+import com.example.xyzreader.model.Book;
 import com.example.xyzreader.model.ReaderViewModel;
 
 /**
@@ -55,14 +59,12 @@ import com.example.xyzreader.model.ReaderViewModel;
  * either contained in a {@link ArticleListActivity} in two-pane mode (on
  * tablets) or a {@link ArticleDetailActivity} on handsets.
  */
-public class ArticleDetailFragment extends Fragment implements
-        LoaderManager.LoaderCallbacks<Cursor>{
+public class ArticleDetailFragment extends Fragment {
     private static final String TAG = "ArticleDetailFragment";
 
     public static final String ARG_ITEM_ID = "item_id";
     private static final float PARALLAX_FACTOR = 1.25f;
 
-    private Cursor mCursor;
     private long mItemId;
     private View mRootView;
     private int mMutedColor = 0xFF333333;
@@ -88,6 +90,7 @@ public class ArticleDetailFragment extends Fragment implements
     private TextView mBylineView;
     private RecyclerView mRecyclerView;
     private ReaderViewModel mModel;
+    private Book mBook;
 
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.sss");
     // Use default locale format
@@ -143,21 +146,12 @@ public class ArticleDetailFragment extends Fragment implements
         return (ArticleDetailActivity) getActivity();
     }
 
-    @Override
-    public void onActivityCreated(Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
-
-        // In support library r8, calling initLoader for a fragment in a FragmentPagerAdapter in
-        // the fragment's onCreate may cause the same LoaderManager to be dealt to multiple
-        // fragments because their mIndex is -1 (haven't been added to the activity yet). Thus,
-        // we do this in onActivityCreated.
-        getLoaderManager().initLoader(2, null, this);
-    }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
             Bundle savedInstanceState) {
+
         mRootView = inflater.inflate(R.layout.fragment_article_detail, container, false);
         FrameLayout frameLayout = mRootView.findViewById(R.id.scrollview);
         frameLayout.setOnTouchListener(new OnSwipeListener(getActivity()){
@@ -249,9 +243,27 @@ public class ArticleDetailFragment extends Fragment implements
         RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false);
         mRecyclerView.setLayoutManager(layoutManager);
 
+
+
         bindViews();
         updateStatusBar();
+
+        setupViewModel();
+
         return mRootView;
+    }
+
+    private void setupViewModel() {
+        mModel = ViewModelProviders.of(getActivity()).get(ReaderViewModel.class);
+        mModel.getSelectedBook().observe(getActivity(), new Observer<Book>() {
+            @Override
+            public void onChanged(Book book) {
+                Log.d(TAG, "Updating fragment book object");
+                mBook = book;
+                bindViews();
+                mRecyclerView.getAdapter().notifyDataSetChanged();
+            }
+        });
     }
 
     private void updateStatusBar() {
@@ -285,7 +297,7 @@ public class ArticleDetailFragment extends Fragment implements
 
     private Date parsePublishedDate() {
         try {
-            String date = mCursor.getString(ArticleLoader.Query.PUBLISHED_DATE);
+            String date = mBook.getPublishedDate();
             return dateFormat.parse(date);
         } catch (ParseException ex) {
             Log.e(TAG, ex.getMessage());
@@ -301,11 +313,11 @@ public class ArticleDetailFragment extends Fragment implements
 
         //bodyView.setTypeface(Typeface.createFromAsset(getResources().getAssets(), "Rosario-Regular.ttf"));
 
-        if (mCursor != null) {
+        if (mBook != null) {
             //mRootView.setAlpha(0);
             mRootView.setVisibility(View.VISIBLE);
             //mRootView.animate().alpha(1);
-            mTitleView.setText(mCursor.getString(ArticleLoader.Query.TITLE));
+            mTitleView.setText(mBook.getTitle());
             Date publishedDate = parsePublishedDate();
             if (!publishedDate.before(START_OF_EPOCH.getTime())) {
                 mBylineView.setText(Html.fromHtml(
@@ -314,14 +326,14 @@ public class ArticleDetailFragment extends Fragment implements
                                 System.currentTimeMillis(), DateUtils.HOUR_IN_MILLIS,
                                 DateUtils.FORMAT_ABBREV_ALL).toString()
                                 + " by <font color='#ffffff'>"
-                                + mCursor.getString(ArticleLoader.Query.AUTHOR)
+                                + mBook.getAuthor()
                                 + "</font>"));
 
             } else {
                 // If date is before 1902, just show the string
                 mBylineView.setText(Html.fromHtml(
                         outputFormat.format(publishedDate) + " by <font color='#ffffff'>"
-                        + mCursor.getString(ArticleLoader.Query.AUTHOR)
+                        + mBook.getAuthor()
                                 + "</font>"));
 
             }
@@ -330,7 +342,7 @@ public class ArticleDetailFragment extends Fragment implements
 
 
             ImageLoaderHelper.getInstance(getActivity()).getImageLoader()
-                    .get(mCursor.getString(ArticleLoader.Query.PHOTO_URL), new ImageLoader.ImageListener() {
+                    .get(mBook.getPhotoUrl(), new ImageLoader.ImageListener() {
                         @Override
                         public void onResponse(ImageLoader.ImageContainer imageContainer, boolean b) {
                             Bitmap bitmap = imageContainer.getBitmap();
@@ -358,7 +370,7 @@ public class ArticleDetailFragment extends Fragment implements
         }
     }
 
-    @Override
+    /*@Override
     public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
         return ArticleLoader.newInstanceForItemId(getActivity(), mItemId);
     }
@@ -387,7 +399,7 @@ public class ArticleDetailFragment extends Fragment implements
     @Override
     public void onLoaderReset(@NonNull androidx.loader.content.Loader<Cursor> loader) {
         mCursor = null;
-    }
+    }*/
 
 
     public int getUpButtonFloor() {
@@ -430,7 +442,7 @@ public class ArticleDetailFragment extends Fragment implements
 
         @Override
         public int getItemCount() {
-            if(mCursor == null){
+            if(mBook == null){
                 return 0;
             }
             return mCurrentNrOfItemsInRecyclerView;
