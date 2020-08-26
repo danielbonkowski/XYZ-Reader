@@ -30,10 +30,12 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
@@ -159,48 +161,9 @@ public class ArticleDetailFragment extends Fragment {
                 R.dimen.detail_card_top_margin);
         setHasOptionsMenu(true);
 
-        if(mBook != null){
-            refresh();
-        }
     }
 
-    private void refresh() {
-        if(mBook != null){
-            Bundle bundle = new Bundle();
-            bundle.putString(ItemsCounterService.EXTRA_SETTING_UP_COUNTER, mBook.getBody());
-            Intent intent = new Intent(mContext, ItemsCounterService.class);
-            intent.putExtras(bundle);
-            mContext.startService(intent);
-        }
 
-    }
-
-    /*@Override
-    public void onStart() {
-        super.onStart();
-        getActivity().registerReceiver(mRefreshingItemCounter,
-                new IntentFilter(ItemsCounterService.BROADCAST_ACTION_ITEMS_COUNTER));
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
-        getActivity().unregisterReceiver(mRefreshingItemCounter);
-    }*/
-
-    private BroadcastReceiver mRefreshingItemCounter = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (ItemsCounterService.BROADCAST_ACTION_ITEMS_COUNTER.equals(intent.getAction())) {
-                mBodyTextArray = intent.getStringArrayExtra(ItemsCounterService.EXTRA_SETTING_UP_COUNTER);
-                mMaxNrOfItemsInRecyclerView = mBodyTextArray.length;
-                if(mRecyclerView != null){
-                    mRecyclerView.getAdapter().notifyDataSetChanged();
-                }
-
-            }
-        }
-    };
 
     public ArticleDetailActivity getActivityCast() {
         return (ArticleDetailActivity) getActivity();
@@ -230,7 +193,6 @@ public class ArticleDetailFragment extends Fragment {
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
                 Log.d(TAG, "Touch fragment");
-                mRecyclerViewPosition = mRecyclerView.getChildLayoutPosition(mLinearLayoutManager.getFocusedChild());
                 return super.onTouch(view, motionEvent);
             }
         });
@@ -305,16 +267,34 @@ public class ArticleDetailFragment extends Fragment {
 
 
 
+
         if(savedInstanceState != null){
             mMaxNrOfItemsInRecyclerView = savedInstanceState.getInt(MAX_ITEMS_NR);
             mCurrentNrOfItemsInRecyclerView = savedInstanceState.getInt(CURRENT_ITEMS_NR);
             mRecyclerViewPosition = savedInstanceState.getInt(SELECTED_ITEM_NR);
         }
 
+
+
         bindViews();
         updateStatusBar();
 
         setupViewModel();
+
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+
+                    View view = mRecyclerView.getChildAt(mRecyclerViewPosition);
+                    float y = 0;
+                    if(view != null){
+                        y = view.getY();
+                    }
+                    mScrollView.smoothScrollTo(0, (int) y + 100);
+
+
+            }
+        }, 200);
 
         return mRootView;
     }
@@ -344,7 +324,7 @@ public class ArticleDetailFragment extends Fragment {
                             @Override
                             public void run() {
                                 bindViews();
-                                mRecyclerView.getAdapter().notifyDataSetChanged();
+                                //mRecyclerView.getAdapter().notifyDataSetChanged();
                             }
                         });
                     }
@@ -379,6 +359,9 @@ public class ArticleDetailFragment extends Fragment {
     public void onSaveInstanceState(@NonNull Bundle outState) {
         outState.putInt(CURRENT_ITEMS_NR, mCurrentNrOfItemsInRecyclerView);
         outState.putInt(MAX_ITEMS_NR, mMaxNrOfItemsInRecyclerView);
+        //LinearLayoutManager linearLayoutManager = (LinearLayoutManager) mRecyclerView.getLayoutManager();
+       //View focusedChild = (View) linearLayoutManager.getChildAt(5);
+       //mRecyclerViewPosition = mRecyclerView.getChildAdapterPosition(focusedChild);
         outState.putInt(SELECTED_ITEM_NR, mRecyclerViewPosition);
         super.onSaveInstanceState(outState);
 
@@ -488,37 +471,6 @@ public class ArticleDetailFragment extends Fragment {
         }
     }
 
-    /*@Override
-    public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
-        return ArticleLoader.newInstanceForItemId(getActivity(), mItemId);
-    }
-
-    @Override
-    public void onLoadFinished(@NonNull androidx.loader.content.Loader<Cursor> loader, Cursor cursor) {
-        if (!isAdded()) {
-            if (cursor != null) {
-                cursor.close();
-            }
-            return;
-        }
-
-        mCursor = cursor;
-        new ParseTextAsyncTask().execute(mCursor);
-
-        if (mCursor != null && !mCursor.moveToFirst()) {
-            Log.e(TAG, "Error reading item detail cursor");
-            mCursor.close();
-            mCursor = null;
-        }
-
-        bindViews();
-    }
-
-    @Override
-    public void onLoaderReset(@NonNull androidx.loader.content.Loader<Cursor> loader) {
-        mCursor = null;
-    }*/
-
 
     public int getUpButtonFloor() {
         if (mPhotoContainerView == null || mPhotoView.getHeight() == 0) {
@@ -545,7 +497,7 @@ public class ArticleDetailFragment extends Fragment {
         }
 
         @Override
-        public void onBindViewHolder(TextAdapterViewHolder holder, final int position) {
+        public void onBindViewHolder(final TextAdapterViewHolder holder, final int position) {
 
             if(mBodyTextArray != null){
                 holder.appCompatTextView.setTextFuture(
@@ -555,6 +507,13 @@ public class ArticleDetailFragment extends Fragment {
                                 null
                         )
                 );
+                holder.appCompatTextView.setOnTouchListener(new View.OnTouchListener() {
+                    @Override
+                    public boolean onTouch(View view, MotionEvent motionEvent) {
+                        mRecyclerViewPosition = position;
+                        return true;
+                    }
+                });
             }
 
         }
