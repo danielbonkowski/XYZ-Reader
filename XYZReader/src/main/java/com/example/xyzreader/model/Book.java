@@ -5,8 +5,10 @@ import androidx.room.Entity;
 import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
+import java.io.Serializable;
+
 @Entity(tableName = "book")
-public class Book {
+public class Book implements Serializable {
 
     @PrimaryKey(autoGenerate = true)
     private int id;
@@ -20,6 +22,7 @@ public class Book {
     private float aspectRatio;
     @ColumnInfo(name = "published_date")
     private String publishedDate;
+
 
     @Ignore
     public Book(String title, String author, String body, String thumbnailUrl, String photoUrl, float aspectRatio, String publishedDate) {

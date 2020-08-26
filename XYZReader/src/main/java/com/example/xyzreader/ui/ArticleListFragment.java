@@ -40,6 +40,7 @@ public class ArticleListFragment extends Fragment {
     View mRootView;
     private static final String TAG = ArticleListActivity.class.toString();
     public static final String EXTRA_ARTICLE_ID = "extra_article_id";
+
     private CollapsingToolbarLayout mToolbar;
     private SwipeRefreshLayout mSwipeRefreshLayout;
     private RecyclerView mRecyclerView;
@@ -57,6 +58,8 @@ public class ArticleListFragment extends Fragment {
 
     public ArticleListFragment() {
     }
+
+
 
     @Nullable
     @Override

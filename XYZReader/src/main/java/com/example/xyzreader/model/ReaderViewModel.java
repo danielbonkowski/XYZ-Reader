@@ -17,6 +17,7 @@ public class ReaderViewModel extends AndroidViewModel {
 
     private LiveData<List<Book>> books;
     private final MutableLiveData<Book> selectedBook = new MutableLiveData<Book>();
+    private final MutableLiveData<String[]> selectedBookBodyArray = new MutableLiveData<String[]>();
 
     public ReaderViewModel(@NonNull Application application) {
         super(application);
@@ -35,5 +36,13 @@ public class ReaderViewModel extends AndroidViewModel {
 
     public LiveData<Book> getSelectedBook(){
         return selectedBook;
+    }
+
+    public void setSelectedBookBodyArray(String[] bodyArray){
+        selectedBookBodyArray.setValue(bodyArray);
+    }
+
+    public LiveData<String[]> getSelectedBookBodyArray(){
+        return selectedBookBodyArray;
     }
 }

@@ -1,7 +1,9 @@
 package com.example.xyzreader.ui;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
-import android.database.Cursor;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Rect;
@@ -13,11 +15,13 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 
 
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 
 
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.text.Html;
 import android.text.format.DateUtils;
 import android.text.method.LinkMovementMethod;
@@ -30,7 +34,6 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
@@ -39,10 +42,7 @@ import androidx.core.app.ShareCompat;
 import androidx.core.text.PrecomputedTextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
-import androidx.lifecycle.ViewModelProvider;
 import androidx.lifecycle.ViewModelProviders;
-import androidx.loader.app.LoaderManager;
-import androidx.loader.content.Loader;
 import androidx.palette.graphics.Palette;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -50,7 +50,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageLoader;
 import com.example.xyzreader.R;
-import com.example.xyzreader.data.ArticleLoader;
+import com.example.xyzreader.data.ItemsCounterService;
+import com.example.xyzreader.model.AppExecutors;
 import com.example.xyzreader.model.Book;
 import com.example.xyzreader.model.ReaderViewModel;
 
@@ -64,6 +65,9 @@ public class ArticleDetailFragment extends Fragment {
 
     public static final String ARG_ITEM_ID = "item_id";
     private static final float PARALLAX_FACTOR = 1.25f;
+    public static final String CURRENT_ITEMS_NR = "current_items_nr";
+    public static final String MAX_ITEMS_NR = "max_items_nr";
+    public static final String SELECTED_ITEM_NR = "selected_item_nr";
 
     private long mItemId;
     private View mRootView;
@@ -91,6 +95,9 @@ public class ArticleDetailFragment extends Fragment {
     private RecyclerView mRecyclerView;
     private ReaderViewModel mModel;
     private Book mBook;
+    private Handler mHandler;
+    private int mRecyclerViewPosition;
+    private LinearLayoutManager mLinearLayoutManager;
 
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.sss");
     // Use default locale format
@@ -98,6 +105,7 @@ public class ArticleDetailFragment extends Fragment {
     // Most time functions can only handle 1902 - 2037
     private GregorianCalendar START_OF_EPOCH = new GregorianCalendar(2,1,1);
     private SwipeListener mSwipeListener;
+    Context mContext;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -106,6 +114,12 @@ public class ArticleDetailFragment extends Fragment {
     public ArticleDetailFragment() {
     }
 
+    @Override
+    public void onAttach(@NonNull Context context) {
+        super.onAttach(context);
+        mContext = context;
+
+    }
 
     public interface SwipeListener{
         public void swipeRight();
@@ -132,15 +146,61 @@ public class ArticleDetailFragment extends Fragment {
             mItemId = getArguments().getLong(ARG_ITEM_ID);
         }
 
+        mHandler = new Handler(Looper.getMainLooper()){
+            @Override
+            public void handleMessage(@NonNull Message msg) {
+                mBodyTextArray = (String[]) msg.obj;
+                mMaxNrOfItemsInRecyclerView = mBodyTextArray.length;
+            }
+        };
+
         mIsCard = getResources().getBoolean(R.bool.detail_is_card);
         mStatusBarFullOpacityBottom = getResources().getDimensionPixelSize(
                 R.dimen.detail_card_top_margin);
         setHasOptionsMenu(true);
 
+        if(mBook != null){
+            refresh();
+        }
+    }
+
+    private void refresh() {
+        if(mBook != null){
+            Bundle bundle = new Bundle();
+            bundle.putString(ItemsCounterService.EXTRA_SETTING_UP_COUNTER, mBook.getBody());
+            Intent intent = new Intent(mContext, ItemsCounterService.class);
+            intent.putExtras(bundle);
+            mContext.startService(intent);
+        }
 
     }
 
+    /*@Override
+    public void onStart() {
+        super.onStart();
+        getActivity().registerReceiver(mRefreshingItemCounter,
+                new IntentFilter(ItemsCounterService.BROADCAST_ACTION_ITEMS_COUNTER));
+    }
 
+    @Override
+    public void onStop() {
+        super.onStop();
+        getActivity().unregisterReceiver(mRefreshingItemCounter);
+    }*/
+
+    private BroadcastReceiver mRefreshingItemCounter = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (ItemsCounterService.BROADCAST_ACTION_ITEMS_COUNTER.equals(intent.getAction())) {
+                mBodyTextArray = intent.getStringArrayExtra(ItemsCounterService.EXTRA_SETTING_UP_COUNTER);
+                mMaxNrOfItemsInRecyclerView = mBodyTextArray.length;
+                if(mRecyclerView != null){
+                    mRecyclerView.getAdapter().notifyDataSetChanged();
+                }
+
+            }
+        }
+    };
 
     public ArticleDetailActivity getActivityCast() {
         return (ArticleDetailActivity) getActivity();
@@ -170,6 +230,7 @@ public class ArticleDetailFragment extends Fragment {
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
                 Log.d(TAG, "Touch fragment");
+                mRecyclerViewPosition = mRecyclerView.getChildLayoutPosition(mLinearLayoutManager.getFocusedChild());
                 return super.onTouch(view, motionEvent);
             }
         });
@@ -231,7 +292,6 @@ public class ArticleDetailFragment extends Fragment {
         });
 
         mTextProgressBar = (ProgressBar) mRootView.findViewById(R.id.text_progress_bar);
-        mTextRecyclerView = (RecyclerView) mRootView.findViewById(R.id.article_body_recycler_view);
 
 
         mTitleView = (TextView) mRootView.findViewById(R.id.article_title);
@@ -240,10 +300,16 @@ public class ArticleDetailFragment extends Fragment {
         mRecyclerView = (RecyclerView) mRootView.findViewById(R.id.article_body_recycler_view);
         TextAdapter textAdapter = new TextAdapter();
         mRecyclerView.setAdapter(textAdapter);
-        RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false);
-        mRecyclerView.setLayoutManager(layoutManager);
+        mLinearLayoutManager = new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false);
+        mRecyclerView.setLayoutManager(mLinearLayoutManager);
 
 
+
+        if(savedInstanceState != null){
+            mMaxNrOfItemsInRecyclerView = savedInstanceState.getInt(MAX_ITEMS_NR);
+            mCurrentNrOfItemsInRecyclerView = savedInstanceState.getInt(CURRENT_ITEMS_NR);
+            mRecyclerViewPosition = savedInstanceState.getInt(SELECTED_ITEM_NR);
+        }
 
         bindViews();
         updateStatusBar();
@@ -253,17 +319,69 @@ public class ArticleDetailFragment extends Fragment {
         return mRootView;
     }
 
+
+
     private void setupViewModel() {
         mModel = ViewModelProviders.of(getActivity()).get(ReaderViewModel.class);
+
         mModel.getSelectedBook().observe(getActivity(), new Observer<Book>() {
             @Override
             public void onChanged(Book book) {
+                mModel.getSelectedBook().removeObserver(this);
                 Log.d(TAG, "Updating fragment book object");
                 mBook = book;
+
+                AppExecutors appExecutors = AppExecutors.getInstance();
+                appExecutors.diskIO().execute(new Runnable() {
+                    @Override
+                    public void run() {
+
+                        String bookBody = mBook.getBody();
+                        mBodyTextArray = bookBody.split("\n\n");
+                        mMaxNrOfItemsInRecyclerView = mBodyTextArray.length;
+
+                        mHandler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                bindViews();
+                                mRecyclerView.getAdapter().notifyDataSetChanged();
+                            }
+                        });
+                    }
+                });
+                if(mBodyTextArray != null){
+                    mModel.setSelectedBookBodyArray(mBodyTextArray);
+                }
+
+
+            }
+        });
+
+        mModel.getSelectedBookBodyArray().observe(getActivity(), new Observer<String[]>() {
+            @Override
+            public void onChanged(String[] strings) {
+                mModel.getSelectedBookBodyArray().removeObserver(this);
+
                 bindViews();
                 mRecyclerView.getAdapter().notifyDataSetChanged();
             }
         });
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        mModel.getSelectedBook().removeObservers(this);
+        mModel.getSelectedBookBodyArray().removeObservers(this);
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        outState.putInt(CURRENT_ITEMS_NR, mCurrentNrOfItemsInRecyclerView);
+        outState.putInt(MAX_ITEMS_NR, mMaxNrOfItemsInRecyclerView);
+        outState.putInt(SELECTED_ITEM_NR, mRecyclerViewPosition);
+        super.onSaveInstanceState(outState);
+
     }
 
     private void updateStatusBar() {
@@ -427,17 +545,18 @@ public class ArticleDetailFragment extends Fragment {
         }
 
         @Override
-        public void onBindViewHolder(TextAdapterViewHolder holder, int position) {
+        public void onBindViewHolder(TextAdapterViewHolder holder, final int position) {
 
             if(mBodyTextArray != null){
                 holder.appCompatTextView.setTextFuture(
                         PrecomputedTextCompat.getTextFuture(
-                                mBodyTextArray[position].trim(),
+                                mBodyTextArray[position].trim() + "\n",
                                 holder.appCompatTextView.getTextMetricsParamsCompat(),
                                 null
                         )
                 );
             }
+
         }
 
         @Override
@@ -456,28 +575,6 @@ public class ArticleDetailFragment extends Fragment {
                 super(itemView);
                 appCompatTextView = (AppCompatTextView) itemView.findViewById(R.id.list_item_text);
             }
-        }
-    }
-
-    class ParseTextAsyncTask extends AsyncTask<Cursor, String, Void> {
-
-        @Override
-        protected Void doInBackground(Cursor... cursors) {
-            Cursor myCursor = cursors[0];
-            if (myCursor != null && myCursor.getCount() > 0 && mBodyText.isEmpty()){
-                myCursor.moveToFirst();
-                mBodyText = myCursor.getString(ArticleLoader.Query.BODY);
-                mBodyTextArray = mBodyText.split("(\r\n|\n)");
-                mMaxNrOfItemsInRecyclerView = mBodyTextArray.length;
-            }
-
-
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            mRecyclerView.getAdapter().notifyDataSetChanged();
         }
     }
 }

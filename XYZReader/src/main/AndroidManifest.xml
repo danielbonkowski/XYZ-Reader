@@ -41,6 +41,9 @@
         <service android:name=".data.UpdaterService"
             android:exported="false" />
 
+        <service android:name=".data.ItemsCounterService"
+            android:exported="false"/>
+
         <provider android:name=".data.ItemsProvider"
             android:authorities="com.example.xyzreader"
             android:exported="false" />

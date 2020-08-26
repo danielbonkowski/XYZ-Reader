@@ -71,7 +71,9 @@ public class UpdaterService extends IntentService {
 
                 String fullText = object.getString("body");
                 fullText = fullText.replaceAll("\r\n\r\n", "\n\n");
-                fullText = fullText.replaceAll("\r\n", " ");
+                fullText = fullText.replaceAll("\r\n", "");
+                fullText = fullText.replaceAll("  ", " ");
+                fullText = fullText.trim();
 
 
 
@@ -88,7 +90,7 @@ public class UpdaterService extends IntentService {
                 });
 
 
-                fullText = fullText.trim();
+
                 values.put(ItemsContract.Items.SERVER_ID, object.getString("id" ));
                 values.put(ItemsContract.Items.AUTHOR, object.getString("author" ));
                 values.put(ItemsContract.Items.TITLE, object.getString("title" ));

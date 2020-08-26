@@ -104,17 +104,19 @@ ArticleDetailFragment.SwipeListener{
             if (getIntent() != null && getIntent().getExtras() != null) {
                 mSelectedFragmentId = getIntent().getLongExtra(EXTRA_ARTICLE_ID, 2);
             }
+
+            FragmentManager fragmentManager = getSupportFragmentManager();
+            Fragment fragment = ArticleDetailFragment.newInstance(mSelectedFragmentId);
+            fragmentManager.beginTransaction()
+                    .add(R.id.details_fragment_container, fragment)
+                    .commit();
         }else{
             mSelectedFragmentId = savedInstanceState.getLong(STATE_SELECTED_ITEM_ID);
         }
 
 
 
-        FragmentManager fragmentManager = getSupportFragmentManager();
-        Fragment fragment = ArticleDetailFragment.newInstance(mSelectedFragmentId);
-        fragmentManager.beginTransaction()
-                .add(R.id.details_fragment_container, fragment)
-                .commit();
+
 
         setupViewModel();
     }
@@ -124,7 +126,7 @@ ArticleDetailFragment.SwipeListener{
         mModel.getSelectedBook().observe(this, new Observer<Book>() {
             @Override
             public void onChanged(Book book) {
-                Log.d(TAG, "Updating selected book");
+                Log.d(TAG, "Updating selected book: ");
                 mBook = book;
             }
         });
@@ -165,7 +167,7 @@ ArticleDetailFragment.SwipeListener{
             --mSelectedFragmentId;
             FragmentManager fragmentManager = getSupportFragmentManager();
             mModel.selectBook(mModel.getBooks().getValue().get((int)mSelectedFragmentId));
-            ArticleDetailFragment fragment = ArticleDetailFragment.newInstance(mBook.getId());
+            ArticleDetailFragment fragment = ArticleDetailFragment.newInstance(mSelectedFragmentId);
             mSelectedItemUpButtonFloor = fragment.getUpButtonFloor();
             fragmentManager.beginTransaction()
                     .replace(R.id.details_fragment_container, fragment)
@@ -180,7 +182,7 @@ ArticleDetailFragment.SwipeListener{
             ++mSelectedFragmentId;
             FragmentManager fragmentManager = getSupportFragmentManager();
             mModel.selectBook(mModel.getBooks().getValue().get((int) mSelectedFragmentId) );
-            ArticleDetailFragment fragment = ArticleDetailFragment.newInstance(mBook.getId());
+            ArticleDetailFragment fragment = ArticleDetailFragment.newInstance(mSelectedFragmentId);
             mSelectedItemUpButtonFloor = fragment.getUpButtonFloor();
             updateUpButtonPosition();
             fragmentManager.beginTransaction()
