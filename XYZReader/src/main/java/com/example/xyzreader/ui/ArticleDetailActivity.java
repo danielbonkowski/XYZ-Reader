@@ -4,7 +4,9 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.os.Build;
 import android.os.Bundle;
+import android.transition.Slide;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.view.WindowInsets;
 import android.widget.FrameLayout;
@@ -155,6 +157,12 @@ ArticleDetailFragment.SwipeListener{
         updateUpButtonPosition();
     }
 
+    @Override
+    public boolean onSupportNavigateUp() {
+        finishAfterTransition();
+        return true;
+    }
+
     private void updateUpButtonPosition() {
         int upButtonNormalBottom = mTopInset + mUpButton.getHeight();
         mUpButton.setTranslationY(Math.min(mSelectedItemUpButtonFloor - upButtonNormalBottom, 20));
@@ -169,7 +177,17 @@ ArticleDetailFragment.SwipeListener{
             mModel.selectBook(mModel.getBooks().getValue().get((int)mSelectedFragmentId));
             ArticleDetailFragment fragment = ArticleDetailFragment.newInstance(mSelectedFragmentId);
             mSelectedItemUpButtonFloor = fragment.getUpButtonFloor();
+
+            Slide exitTransition = new Slide();
+            exitTransition.setSlideEdge(Gravity.LEFT);
+            exitTransition.setDuration(300);
+            getWindow().setExitTransition(exitTransition);
+
             fragmentManager.beginTransaction()
+                    .setCustomAnimations(R.anim.fragment_enter_right,
+                            R.anim.fragment_exit_right,
+                            R.anim.fragment_enter_left,
+                            R.anim.fragment_exit_left)
                     .replace(R.id.details_fragment_container, fragment)
                     .commit();
         }
@@ -185,7 +203,16 @@ ArticleDetailFragment.SwipeListener{
             ArticleDetailFragment fragment = ArticleDetailFragment.newInstance(mSelectedFragmentId);
             mSelectedItemUpButtonFloor = fragment.getUpButtonFloor();
             updateUpButtonPosition();
+
+            Slide exitTransition = new Slide();
+            exitTransition.setSlideEdge(Gravity.RIGHT);
+            exitTransition.setDuration(300);
+            getWindow().setExitTransition(exitTransition);
             fragmentManager.beginTransaction()
+                    .setCustomAnimations(R.anim.fragment_enter_left,
+                            R.anim.fragment_exit_left,
+                            R.anim.fragment_enter_right,
+                            R.anim.fragment_exit_right)
                     .replace(R.id.details_fragment_container, fragment)
                     .commit();
         }

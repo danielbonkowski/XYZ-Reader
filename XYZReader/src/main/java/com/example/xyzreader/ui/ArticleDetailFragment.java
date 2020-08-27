@@ -25,7 +25,9 @@ import android.os.Message;
 import android.text.Html;
 import android.text.format.DateUtils;
 import android.text.method.LinkMovementMethod;
+import android.transition.Slide;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -299,7 +301,14 @@ public class ArticleDetailFragment extends Fragment {
         return mRootView;
     }
 
-
+    @Override
+    public void onDestroy() {
+        Slide exitTransition = new Slide();
+        exitTransition.setSlideEdge(Gravity.RIGHT);
+        exitTransition.setDuration(300);
+        getActivity().getWindow().setExitTransition(exitTransition);
+        super.onDestroy();
+    }
 
     private void setupViewModel() {
         mModel = ViewModelProviders.of(getActivity()).get(ReaderViewModel.class);

@@ -23,6 +23,10 @@
 
     <style name="Theme.Bacon.Detail">
         <item name="android:statusBarColor">@color/theme_primary_dark</item>
+        <item name="android:windowActivityTransitions">true</item>
+        <item name="android:windowContentTransitions">true</item>
+        <!--<item name="android:windowExitTransition">
+            @transition/article_list_exit</item>-->
     </style>
 
 </resources>

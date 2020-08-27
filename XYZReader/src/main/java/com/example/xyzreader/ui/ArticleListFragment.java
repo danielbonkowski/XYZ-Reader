@@ -1,5 +1,6 @@
 package com.example.xyzreader.ui;
 
+import android.app.ActivityOptions;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -7,10 +8,12 @@ import android.content.IntentFilter;
 import android.os.Bundle;
 import android.text.Html;
 import android.text.format.DateUtils;
+import android.transition.Explode;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -49,6 +52,7 @@ public class ArticleListFragment extends Fragment {
     private boolean mIsRefreshing = false;
     private int mAnimatedViewPosition = -1;
     private AppDatabase mDb;
+    private ImageView mSharedImageView;
 
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.sss");
     // Use default locale format
@@ -189,7 +193,7 @@ public class ArticleListFragment extends Fragment {
         }
 
         @Override
-        public ArticleListFragment.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        public ArticleListFragment.ViewHolder onCreateViewHolder(final ViewGroup parent, int viewType) {
             View view = getLayoutInflater().inflate(R.layout.list_item_article, parent, false);
             final ArticleListFragment.ViewHolder vh = new ArticleListFragment.ViewHolder(view);
 
@@ -198,11 +202,21 @@ public class ArticleListFragment extends Fragment {
                 public void onClick(View view) {
                     Intent intent = new Intent(getActivity().getApplicationContext(), ArticleDetailActivity.class);
                     intent.putExtra(EXTRA_ARTICLE_ID, (long) vh.getAdapterPosition());
-                    startActivity(intent);
+                    Bundle bundle = ActivityOptions
+                            .makeSceneTransitionAnimation(
+                                    getActivity(),
+                                    vh.thumbnailView,
+                                    vh.thumbnailView.getTransitionName())
+                            .toBundle();
+
+
+                    startActivity(intent, bundle);
                 }
             });
             return vh;
         }
+
+
 
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
