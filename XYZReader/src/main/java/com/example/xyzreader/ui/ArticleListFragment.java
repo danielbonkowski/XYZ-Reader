@@ -5,9 +5,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.Html;
 import android.text.format.DateUtils;
@@ -15,8 +12,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -25,19 +20,15 @@ import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
-import androidx.loader.content.AsyncTaskLoader;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
-import com.android.volley.toolbox.ImageLoader;
 import com.example.xyzreader.R;
 import com.example.xyzreader.data.UpdaterService;
-import com.example.xyzreader.model.AppDatabase;
 import com.example.xyzreader.model.Book;
 import com.example.xyzreader.model.ReaderViewModel;
 import com.example.xyzreader.remote.InternetCheckAsyncTask;
-import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.google.android.material.snackbar.Snackbar;
 
 import java.text.ParseException;
@@ -54,18 +45,13 @@ implements InternetCheckAsyncTask.ShowConnectionError{
     private static final String TAG = ArticleListActivity.class.toString();
     public static final String EXTRA_ARTICLE_ID = "extra_article_id";
 
-    private CollapsingToolbarLayout mToolbar;
     private SwipeRefreshLayout mSwipeRefreshLayout;
-    private RecyclerView mRecyclerView;
-    private Adapter mAdapter;
+    private RecyclerView mArticlesRecyclerView;
+    private ArticlesAdapter mArticlesAdapter;
     private ReaderViewModel mModel;
     private boolean mIsRefreshing = false;
-    private int mAnimatedViewPosition = -1;
-    private AppDatabase mDb;
-    private ImageView mSharedImageView;
     private boolean mConnectionError = false;
     private CoordinatorLayout mCoordinatorLayout;
-    private int mLoadedImagesCounter = 0;
     private boolean mCheckInternetConnection = true;
     private StaggeredGridLayoutManager mLayoutManager;
 
@@ -79,30 +65,42 @@ implements InternetCheckAsyncTask.ShowConnectionError{
     }
 
 
-
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
 
         mRootView = inflater.inflate(R.layout.fragment_article_list, container, false);
 
-
-        mToolbar = (CollapsingToolbarLayout) mRootView.findViewById(R.id.collapsingToolbar);
-        mDb = AppDatabase.getInstance(getActivity().getApplicationContext());
-
-        if(savedInstanceState != null){
-           mCheckInternetConnection = savedInstanceState.getBoolean(STATE_CHECK_CONNECTION);
+        if (savedInstanceState == null) {
+            refreshArticles();
+        }else{
+            mCheckInternetConnection = savedInstanceState.getBoolean(STATE_CHECK_CONNECTION);
         }
 
+        checkInternetConnection();
+
+        setupCoordinatorLayout();
+
+        setupSwipeRefreshLayout();
+
+        setupArticlesRecyclerView();
+
+        setupViewModel();
+
+        return mRootView;
+    }
+
+    private void checkInternetConnection() {
         if(mCheckInternetConnection){
             new InternetCheckAsyncTask(this).execute(this.getContext());
         }
+    }
 
+    private void setupCoordinatorLayout() {
         mCoordinatorLayout = mRootView.findViewById(R.id.coordinator_layout);
+    }
 
-        final View toolbarContainerView = mRootView.findViewById(R.id.appBar);
-        //final LoaderManager.LoaderCallbacks context = this;
-
+    private void setupSwipeRefreshLayout() {
 
         mSwipeRefreshLayout = (SwipeRefreshLayout) mRootView.findViewById(R.id.swipe_refresh_layout);
         mSwipeRefreshLayout.setProgressViewOffset(false, 50, 50);
@@ -110,16 +108,32 @@ implements InternetCheckAsyncTask.ShowConnectionError{
         mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-
                 refreshRecyclerView();
             }
         });
+    }
 
+    private void refreshRecyclerView() {
 
+        mArticlesRecyclerView.setAdapter(null);
+        mArticlesRecyclerView.setLayoutManager(null);
+        mArticlesRecyclerView.setAdapter(mArticlesAdapter);
+        mArticlesRecyclerView.setLayoutManager(mLayoutManager);
+        mArticlesAdapter.notifyDataSetChanged();
+        mIsRefreshing = false;
+        updateRefreshingUI();
+    }
 
+    private void setupArticlesRecyclerView() {
 
-        mRecyclerView = (RecyclerView) mRootView.findViewById(R.id.books_recycler_view);
-        mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+        mArticlesRecyclerView = (RecyclerView) mRootView.findViewById(R.id.books_recycler_view);
+        mArticlesAdapter = new ArticlesAdapter(null);
+        mArticlesAdapter.setHasStableIds(true);
+        mArticlesRecyclerView.setAdapter(mArticlesAdapter);
+        int columnCount = getResources().getInteger(R.integer.list_column_count);
+        mLayoutManager = new StaggeredGridLayoutManager(columnCount, StaggeredGridLayoutManager.VERTICAL);
+        mArticlesRecyclerView.setLayoutManager(mLayoutManager);
+        mArticlesRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
 
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
@@ -128,34 +142,9 @@ implements InternetCheckAsyncTask.ShowConnectionError{
                 mSwipeRefreshLayout.setEnabled(adapterPosition >= 0);
             }
         });
-
-
-        if (savedInstanceState == null) {
-            refresh();
-        }
-
-        mAdapter = new Adapter(null);
-        mAdapter.setHasStableIds(true);
-        mRecyclerView.setAdapter(mAdapter);
-        int columnCount = getResources().getInteger(R.integer.list_column_count);
-        mLayoutManager = new StaggeredGridLayoutManager(columnCount, StaggeredGridLayoutManager.VERTICAL);
-        mRecyclerView.setLayoutManager(mLayoutManager);
-
-        setupViewModel();
-
-        return mRootView;
     }
 
-    private void refreshRecyclerView() {
 
-        mRecyclerView.setAdapter(null);
-        mRecyclerView.setLayoutManager(null);
-        mRecyclerView.setAdapter(mAdapter);
-        mRecyclerView.setLayoutManager(mLayoutManager);
-        mAdapter.notifyDataSetChanged();
-        mIsRefreshing = false;
-        updateRefreshingUI();
-    }
 
     @Override
     public void onResume() {
@@ -168,13 +157,13 @@ implements InternetCheckAsyncTask.ShowConnectionError{
             @Override
             public void onChanged(List<Book> books) {
                 Log.d(TAG, "Updating list of books from LiveData in ViewModel");
-                mAdapter.setBooks(books);
-                mAdapter.notifyDataSetChanged();
+                mArticlesAdapter.setBooks(books);
+                mArticlesAdapter.notifyDataSetChanged();
             }
         });
     }
 
-    private void refresh() {
+    private void refreshArticles() {
         getActivity().startService(new Intent(getActivity(), UpdaterService.class));
     }
 
@@ -196,7 +185,7 @@ implements InternetCheckAsyncTask.ShowConnectionError{
         public void onReceive(Context context, Intent intent) {
             if (UpdaterService.BROADCAST_ACTION_STATE_CHANGE.equals(intent.getAction())) {
                 mIsRefreshing = intent.getBooleanExtra(UpdaterService.EXTRA_REFRESHING, false);
-                mConnectionError =intent.getBooleanExtra(UpdaterService.EXTRA_SHOW_SNACKBAR, false);
+                mConnectionError = intent.getBooleanExtra(UpdaterService.EXTRA_SHOW_SNACKBAR, false);
                 updateRefreshingUI();
             }
         }
@@ -204,9 +193,7 @@ implements InternetCheckAsyncTask.ShowConnectionError{
 
     private void updateRefreshingUI() {
         mSwipeRefreshLayout.setRefreshing(mIsRefreshing);
-        if(mConnectionError){
-            showConnectionError();
-        }
+        if(mConnectionError){ showConnectionError(); }
     }
 
     private void showConnectionError() {
@@ -223,30 +210,25 @@ implements InternetCheckAsyncTask.ShowConnectionError{
     }
 
     @Override
-    public void onSaveInstanceState(@NonNull Bundle outState) {
-        outState.putBoolean(STATE_CHECK_CONNECTION, mCheckInternetConnection);
-        super.onSaveInstanceState(outState);
-    }
-
-    @Override
     public void showError() {
         mConnectionError = true;
         updateRefreshingUI();
     }
 
-    public class Adapter extends RecyclerView.Adapter<ArticleListFragment.ViewHolder> {
+
+
+    public class ArticlesAdapter extends RecyclerView.Adapter<ArticleViewHolder> {
         private List<Book> mBooks;
         private int mPosition;
 
-        public Adapter(List<Book> books) {
+        public ArticlesAdapter(List<Book> books) {
             mBooks = books;
         }
 
         public void setBooks(List<Book> books){
             mBooks = books;
-            mAdapter.notifyDataSetChanged();
+            mArticlesAdapter.notifyDataSetChanged();
         }
-
 
         @Override
         public long getItemId(int position) {
@@ -255,9 +237,9 @@ implements InternetCheckAsyncTask.ShowConnectionError{
         }
 
         @Override
-        public ArticleListFragment.ViewHolder onCreateViewHolder(final ViewGroup parent, int viewType) {
+        public ArticleViewHolder onCreateViewHolder(final ViewGroup parent, int viewType) {
             View view = getLayoutInflater().inflate(R.layout.list_item_article, parent, false);
-            final ArticleListFragment.ViewHolder vh = new ArticleListFragment.ViewHolder(view);
+            final ArticleViewHolder vh = new ArticleViewHolder(view);
 
             view.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -269,7 +251,7 @@ implements InternetCheckAsyncTask.ShowConnectionError{
         }
 
 
-        private void openDetailActivityWithAnimation(ViewHolder vh) {
+        private void openDetailActivityWithAnimation(ArticleViewHolder vh) {
             Intent intent = new Intent(getActivity().getApplicationContext(), ArticleDetailActivity.class);
             intent.putExtra(EXTRA_ARTICLE_ID, (long) vh.getAdapterPosition());
             Bundle bundle = ActivityOptions
@@ -284,9 +266,21 @@ implements InternetCheckAsyncTask.ShowConnectionError{
 
 
         @Override
-        public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        public void onBindViewHolder(@NonNull ArticleViewHolder holder, int position) {
             Book book = mBooks.get(position);
+
+            bindTitle(holder, book);
+            bindSubtitle(holder, book);
+            bindThumbnail(holder, book);
+        }
+
+
+        private void bindTitle(@NonNull ArticleViewHolder holder, Book book) {
             holder.titleView.setText(book.getTitle());
+        }
+
+
+        private void bindSubtitle(@NonNull ArticleViewHolder holder, Book book) {
             Date publishedDate = parsePublishedDate();
             if (!publishedDate.before(START_OF_EPOCH.getTime())) {
 
@@ -303,16 +297,16 @@ implements InternetCheckAsyncTask.ShowConnectionError{
                                 + "<br/>" + " by "
                                 + book.getAuthor()));
             }
+        }
 
 
-            ImageLoader imageLoader = ImageLoaderHelper.getInstance(getActivity()).getImageLoader();
-
+        private void bindThumbnail(@NonNull ArticleViewHolder holder, Book book) {
             holder.thumbnailView.setImageUrl(
                     book.getThumbnailUrl(),
-                    imageLoader);
+                    ImageLoaderHelper.getInstance(getActivity()).getImageLoader());
             holder.thumbnailView.setAspectRatio(book.getAspectRatio());
-
         }
+
 
         private Date parsePublishedDate() {
             try {
@@ -335,19 +329,16 @@ implements InternetCheckAsyncTask.ShowConnectionError{
         }
     }
 
-    public static class ViewHolder extends RecyclerView.ViewHolder {
+    public static class ArticleViewHolder extends RecyclerView.ViewHolder {
         public DynamicHeightNetworkImageView thumbnailView;
         public TextView titleView;
         public TextView subtitleView;
 
-        public ViewHolder(View view) {
+        public ArticleViewHolder(View view) {
             super(view);
             thumbnailView = (DynamicHeightNetworkImageView) view.findViewById(R.id.thumbnail);
             titleView = (TextView) view.findViewById(R.id.article_title);
             subtitleView = (TextView) view.findViewById(R.id.article_subtitle);
         }
     }
-
-
-
 }
