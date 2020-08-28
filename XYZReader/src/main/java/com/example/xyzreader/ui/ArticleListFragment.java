@@ -36,6 +36,7 @@ import com.example.xyzreader.data.UpdaterService;
 import com.example.xyzreader.model.AppDatabase;
 import com.example.xyzreader.model.Book;
 import com.example.xyzreader.model.ReaderViewModel;
+import com.example.xyzreader.remote.InternetCheckAsyncTask;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.google.android.material.snackbar.Snackbar;
 
@@ -45,7 +46,8 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
 
-public class ArticleListFragment extends Fragment {
+public class ArticleListFragment extends Fragment
+implements InternetCheckAsyncTask.ShowConnectionError{
 
     private static final String STATE_CHECK_CONNECTION = "check_internet_connection";
     View mRootView;
@@ -62,7 +64,6 @@ public class ArticleListFragment extends Fragment {
     private AppDatabase mDb;
     private ImageView mSharedImageView;
     private boolean mConnectionError = false;
-    private boolean mImageLoadingError = false;
     private CoordinatorLayout mCoordinatorLayout;
     private int mLoadedImagesCounter = 0;
     private boolean mCheckInternetConnection = true;
@@ -94,7 +95,7 @@ public class ArticleListFragment extends Fragment {
         }
 
         if(mCheckInternetConnection){
-            new InternetCheckAsyncTask().execute();
+            new InternetCheckAsyncTask(this).execute(this.getContext());
         }
 
         mCoordinatorLayout = mRootView.findViewById(R.id.coordinator_layout);
@@ -109,18 +110,8 @@ public class ArticleListFragment extends Fragment {
         mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                //getSupportLoaderManager().restartLoader(0, null, context);
 
-                //refresh();
-
-
-                mRecyclerView.setAdapter(null);
-                mRecyclerView.setLayoutManager(null);
-                mRecyclerView.setAdapter(mAdapter);
-                mRecyclerView.setLayoutManager(mLayoutManager);
-                mAdapter.notifyDataSetChanged();
-                mIsRefreshing = false;
-                updateRefreshingUI();
+                refreshRecyclerView();
             }
         });
 
@@ -153,6 +144,17 @@ public class ArticleListFragment extends Fragment {
         setupViewModel();
 
         return mRootView;
+    }
+
+    private void refreshRecyclerView() {
+
+        mRecyclerView.setAdapter(null);
+        mRecyclerView.setLayoutManager(null);
+        mRecyclerView.setAdapter(mAdapter);
+        mRecyclerView.setLayoutManager(mLayoutManager);
+        mAdapter.notifyDataSetChanged();
+        mIsRefreshing = false;
+        updateRefreshingUI();
     }
 
     @Override
@@ -202,25 +204,34 @@ public class ArticleListFragment extends Fragment {
 
     private void updateRefreshingUI() {
         mSwipeRefreshLayout.setRefreshing(mIsRefreshing);
-        if(mConnectionError || mImageLoadingError){
-            mConnectionError = false;
-            mImageLoadingError = false;
-            Snackbar.make(mCoordinatorLayout,
-                    "Cannot update the articles list. Check your internet connection",
-                    Snackbar.LENGTH_LONG)
-                    .setAction("CLOSE", new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    mCheckInternetConnection = false;
-                }
-            }).show();
+        if(mConnectionError){
+            showConnectionError();
         }
+    }
+
+    private void showConnectionError() {
+        mConnectionError = false;
+        Snackbar.make(mCoordinatorLayout,
+                "Cannot update the articles list. Check your internet connection",
+                Snackbar.LENGTH_LONG)
+                .setAction("CLOSE", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mCheckInternetConnection = false;
+            }
+        }).show();
     }
 
     @Override
     public void onSaveInstanceState(@NonNull Bundle outState) {
         outState.putBoolean(STATE_CHECK_CONNECTION, mCheckInternetConnection);
         super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    public void showError() {
+        mConnectionError = true;
+        updateRefreshingUI();
     }
 
     public class Adapter extends RecyclerView.Adapter<ArticleListFragment.ViewHolder> {
@@ -251,23 +262,25 @@ public class ArticleListFragment extends Fragment {
             view.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    String hej = vh.thumbnailView.getTransitionName();
-                    Intent intent = new Intent(getActivity().getApplicationContext(), ArticleDetailActivity.class);
-                    intent.putExtra(EXTRA_ARTICLE_ID, (long) vh.getAdapterPosition());
-                    Bundle bundle = ActivityOptions
-                            .makeSceneTransitionAnimation(
-                                    getActivity(),
-                                    vh.thumbnailView,
-                                    vh.thumbnailView.getTransitionName())
-                            .toBundle();
-
-
-                    startActivity(intent, bundle);
+                    openDetailActivityWithAnimation(vh);
                 }
             });
             return vh;
         }
 
+
+        private void openDetailActivityWithAnimation(ViewHolder vh) {
+            Intent intent = new Intent(getActivity().getApplicationContext(), ArticleDetailActivity.class);
+            intent.putExtra(EXTRA_ARTICLE_ID, (long) vh.getAdapterPosition());
+            Bundle bundle = ActivityOptions
+                    .makeSceneTransitionAnimation(
+                            getActivity(),
+                            vh.thumbnailView,
+                            vh.thumbnailView.getTransitionName())
+                    .toBundle();
+
+            startActivity(intent, bundle);
+        }
 
 
         @Override
@@ -335,21 +348,6 @@ public class ArticleListFragment extends Fragment {
         }
     }
 
-    private class InternetCheckAsyncTask extends AsyncTask<Void, Void, Boolean>{
-        @Override
-        protected Boolean doInBackground(Void... voids) {
-            ConnectivityManager connectivityManager
-                    = (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
-            NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
-            return networkInfo != null && networkInfo.isConnectedOrConnecting();
-        }
 
-        @Override
-        protected void onPostExecute(Boolean isConnected) {
-            if(!isConnected){
-                mConnectionError = true;
-                updateRefreshingUI();
-            }
-        }
-    }
+
 }

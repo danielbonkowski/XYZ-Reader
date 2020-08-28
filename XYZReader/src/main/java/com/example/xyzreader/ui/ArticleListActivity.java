@@ -22,16 +22,16 @@ public class ArticleListActivity extends AppCompatActivity /*implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_article_list);
 
+        addNewArticleListFragment(savedInstanceState);
+    }
+
+    private void addNewArticleListFragment(Bundle savedInstanceState) {
         if(savedInstanceState == null){
             FragmentManager fragmentManager = getSupportFragmentManager();
-
             Fragment fragment = new ArticleListFragment();
             fragmentManager.beginTransaction()
                     .add(R.id.list_fragment_container, fragment)
                     .commit();
         }
-
-
     }
-
 }
