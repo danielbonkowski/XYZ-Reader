@@ -5,32 +5,39 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.Html;
 import android.text.format.DateUtils;
-import android.transition.Explode;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
+import androidx.loader.content.AsyncTaskLoader;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import com.android.volley.toolbox.ImageLoader;
 import com.example.xyzreader.R;
 import com.example.xyzreader.data.UpdaterService;
 import com.example.xyzreader.model.AppDatabase;
 import com.example.xyzreader.model.Book;
 import com.example.xyzreader.model.ReaderViewModel;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
+import com.google.android.material.snackbar.Snackbar;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -40,6 +47,7 @@ import java.util.List;
 
 public class ArticleListFragment extends Fragment {
 
+    private static final String STATE_CHECK_CONNECTION = "check_internet_connection";
     View mRootView;
     private static final String TAG = ArticleListActivity.class.toString();
     public static final String EXTRA_ARTICLE_ID = "extra_article_id";
@@ -53,6 +61,12 @@ public class ArticleListFragment extends Fragment {
     private int mAnimatedViewPosition = -1;
     private AppDatabase mDb;
     private ImageView mSharedImageView;
+    private boolean mConnectionError = false;
+    private boolean mImageLoadingError = false;
+    private CoordinatorLayout mCoordinatorLayout;
+    private int mLoadedImagesCounter = 0;
+    private boolean mCheckInternetConnection = true;
+    private StaggeredGridLayoutManager mLayoutManager;
 
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.sss");
     // Use default locale format
@@ -71,9 +85,19 @@ public class ArticleListFragment extends Fragment {
 
         mRootView = inflater.inflate(R.layout.fragment_article_list, container, false);
 
+
         mToolbar = (CollapsingToolbarLayout) mRootView.findViewById(R.id.collapsingToolbar);
         mDb = AppDatabase.getInstance(getActivity().getApplicationContext());
 
+        if(savedInstanceState != null){
+           mCheckInternetConnection = savedInstanceState.getBoolean(STATE_CHECK_CONNECTION);
+        }
+
+        if(mCheckInternetConnection){
+            new InternetCheckAsyncTask().execute();
+        }
+
+        mCoordinatorLayout = mRootView.findViewById(R.id.coordinator_layout);
 
         final View toolbarContainerView = mRootView.findViewById(R.id.appBar);
         //final LoaderManager.LoaderCallbacks context = this;
@@ -87,6 +111,13 @@ public class ArticleListFragment extends Fragment {
             public void onRefresh() {
                 //getSupportLoaderManager().restartLoader(0, null, context);
 
+                //refresh();
+
+
+                mRecyclerView.setAdapter(null);
+                mRecyclerView.setLayoutManager(null);
+                mRecyclerView.setAdapter(mAdapter);
+                mRecyclerView.setLayoutManager(mLayoutManager);
                 mAdapter.notifyDataSetChanged();
                 mIsRefreshing = false;
                 updateRefreshingUI();
@@ -116,9 +147,8 @@ public class ArticleListFragment extends Fragment {
         mAdapter.setHasStableIds(true);
         mRecyclerView.setAdapter(mAdapter);
         int columnCount = getResources().getInteger(R.integer.list_column_count);
-        StaggeredGridLayoutManager sglm =
-                new StaggeredGridLayoutManager(columnCount, StaggeredGridLayoutManager.VERTICAL);
-        mRecyclerView.setLayoutManager(sglm);
+        mLayoutManager = new StaggeredGridLayoutManager(columnCount, StaggeredGridLayoutManager.VERTICAL);
+        mRecyclerView.setLayoutManager(mLayoutManager);
 
         setupViewModel();
 
@@ -164,6 +194,7 @@ public class ArticleListFragment extends Fragment {
         public void onReceive(Context context, Intent intent) {
             if (UpdaterService.BROADCAST_ACTION_STATE_CHANGE.equals(intent.getAction())) {
                 mIsRefreshing = intent.getBooleanExtra(UpdaterService.EXTRA_REFRESHING, false);
+                mConnectionError =intent.getBooleanExtra(UpdaterService.EXTRA_SHOW_SNACKBAR, false);
                 updateRefreshingUI();
             }
         }
@@ -171,6 +202,25 @@ public class ArticleListFragment extends Fragment {
 
     private void updateRefreshingUI() {
         mSwipeRefreshLayout.setRefreshing(mIsRefreshing);
+        if(mConnectionError || mImageLoadingError){
+            mConnectionError = false;
+            mImageLoadingError = false;
+            Snackbar.make(mCoordinatorLayout,
+                    "Cannot update the articles list. Check your internet connection",
+                    Snackbar.LENGTH_LONG)
+                    .setAction("CLOSE", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    mCheckInternetConnection = false;
+                }
+            }).show();
+        }
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        outState.putBoolean(STATE_CHECK_CONNECTION, mCheckInternetConnection);
+        super.onSaveInstanceState(outState);
     }
 
     public class Adapter extends RecyclerView.Adapter<ArticleListFragment.ViewHolder> {
@@ -186,6 +236,7 @@ public class ArticleListFragment extends Fragment {
             mAdapter.notifyDataSetChanged();
         }
 
+
         @Override
         public long getItemId(int position) {
             mPosition = position;
@@ -200,6 +251,7 @@ public class ArticleListFragment extends Fragment {
             view.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
+                    String hej = vh.thumbnailView.getTransitionName();
                     Intent intent = new Intent(getActivity().getApplicationContext(), ArticleDetailActivity.class);
                     intent.putExtra(EXTRA_ARTICLE_ID, (long) vh.getAdapterPosition());
                     Bundle bundle = ActivityOptions
@@ -238,10 +290,15 @@ public class ArticleListFragment extends Fragment {
                                 + "<br/>" + " by "
                                 + book.getAuthor()));
             }
+
+
+            ImageLoader imageLoader = ImageLoaderHelper.getInstance(getActivity()).getImageLoader();
+
             holder.thumbnailView.setImageUrl(
                     book.getThumbnailUrl(),
-                    ImageLoaderHelper.getInstance(getActivity()).getImageLoader());
+                    imageLoader);
             holder.thumbnailView.setAspectRatio(book.getAspectRatio());
+
         }
 
         private Date parsePublishedDate() {
@@ -275,6 +332,24 @@ public class ArticleListFragment extends Fragment {
             thumbnailView = (DynamicHeightNetworkImageView) view.findViewById(R.id.thumbnail);
             titleView = (TextView) view.findViewById(R.id.article_title);
             subtitleView = (TextView) view.findViewById(R.id.article_subtitle);
+        }
+    }
+
+    private class InternetCheckAsyncTask extends AsyncTask<Void, Void, Boolean>{
+        @Override
+        protected Boolean doInBackground(Void... voids) {
+            ConnectivityManager connectivityManager
+                    = (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
+            return networkInfo != null && networkInfo.isConnectedOrConnecting();
+        }
+
+        @Override
+        protected void onPostExecute(Boolean isConnected) {
+            if(!isConnected){
+                mConnectionError = true;
+                updateRefreshingUI();
+            }
         }
     }
 }

@@ -30,8 +30,11 @@ public class UpdaterService extends IntentService {
             = "com.example.xyzreader.intent.action.STATE_CHANGE";
     public static final String EXTRA_REFRESHING
             = "com.example.xyzreader.intent.extra.REFRESHING";
+    public static final String EXTRA_SHOW_SNACKBAR =
+            "com.example.xyzreader.intent.extra.EXTRA_SHOW_SNACKBAR";
 
     AppDatabase mDb;
+    boolean mConnectionError = false;
 
     public UpdaterService() {
         super(TAG);
@@ -106,8 +109,13 @@ public class UpdaterService extends IntentService {
 
         } catch (JSONException | RemoteException | OperationApplicationException e) {
             Log.e(TAG, "Error updating content.", e);
+            mConnectionError = true;
+        }finally {
+            sendStickyBroadcast(new Intent(BROADCAST_ACTION_STATE_CHANGE)
+                    .putExtra(EXTRA_REFRESHING, false)
+                    .putExtra(EXTRA_SHOW_SNACKBAR, mConnectionError));
         }
 
-        sendStickyBroadcast(new Intent(BROADCAST_ACTION_STATE_CHANGE).putExtra(EXTRA_REFRESHING, false));
+
     }
 }
