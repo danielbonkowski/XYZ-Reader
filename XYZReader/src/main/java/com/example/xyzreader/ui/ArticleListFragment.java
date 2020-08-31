@@ -20,6 +20,7 @@ import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
@@ -53,7 +54,8 @@ implements InternetCheckAsyncTask.ShowConnectionError{
     private boolean mConnectionError = false;
     private CoordinatorLayout mCoordinatorLayout;
     private boolean mCheckInternetConnection = true;
-    private StaggeredGridLayoutManager mLayoutManager;
+    private RecyclerView.LayoutManager mLayoutManager;
+    private boolean mIsCard;
 
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.sss");
     // Use default locale format
@@ -66,7 +68,7 @@ implements InternetCheckAsyncTask.ShowConnectionError{
     }
 
     public interface ArticleClickListener{
-        public void onArticleClick();
+        public void onArticleClick(ArticleViewHolder viewHolder);
     }
 
     @Override
@@ -80,6 +82,7 @@ implements InternetCheckAsyncTask.ShowConnectionError{
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
 
         mRootView = inflater.inflate(R.layout.fragment_article_list, container, false);
+        mIsCard = getResources().getBoolean(R.bool.detail_is_card);
 
         if (savedInstanceState == null) {
             refreshArticles();
@@ -141,7 +144,12 @@ implements InternetCheckAsyncTask.ShowConnectionError{
         mArticlesAdapter.setHasStableIds(true);
         mArticlesRecyclerView.setAdapter(mArticlesAdapter);
         int columnCount = getResources().getInteger(R.integer.list_column_count);
-        mLayoutManager = new StaggeredGridLayoutManager(columnCount, StaggeredGridLayoutManager.VERTICAL);
+        if(mIsCard){
+            mLayoutManager = new LinearLayoutManager(getActivity(), RecyclerView.VERTICAL, false);
+        }else {
+            mLayoutManager = new StaggeredGridLayoutManager(columnCount, StaggeredGridLayoutManager.VERTICAL);
+        }
+
         mArticlesRecyclerView.setLayoutManager(mLayoutManager);
         mArticlesRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
 
@@ -254,25 +262,10 @@ implements InternetCheckAsyncTask.ShowConnectionError{
             view.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    mArticleClickListener.onArticleClick();
-                    openDetailActivityWithAnimation(vh);
+                    mArticleClickListener.onArticleClick(vh);
                 }
             });
             return vh;
-        }
-
-
-        private void openDetailActivityWithAnimation(ArticleViewHolder vh) {
-            Intent intent = new Intent(getActivity().getApplicationContext(), ArticleDetailActivity.class);
-            intent.putExtra(EXTRA_ARTICLE_ID, (long) vh.getAdapterPosition());
-            Bundle bundle = ActivityOptions
-                    .makeSceneTransitionAnimation(
-                            getActivity(),
-                            vh.thumbnailView,
-                            vh.thumbnailView.getTransitionName())
-                    .toBundle();
-
-            startActivity(intent, bundle);
         }
 
 
