@@ -86,13 +86,10 @@ public class ArticleDetailFragment extends Fragment {
     private int mScrollY;
     private boolean mIsCard = false;
     private int mStatusBarFullOpacityBottom;
-    private ProgressBar mTextProgressBar;
-    private RecyclerView mTextRecyclerView;
-    private String mBodyText = "";
+
     private int mMaxNrOfItemsInRecyclerView;
     private int mCurrentNrOfItemsInRecyclerView = 10;
     private String[] mBodyTextArray;
-    private DrawInsetsFrameLayout mContainerFrameLayout;
 
     private TextView mTitleView;
     private TextView mBylineView;
@@ -161,10 +158,8 @@ public class ArticleDetailFragment extends Fragment {
         mIsCard = getResources().getBoolean(R.bool.detail_is_card);
         mStatusBarFullOpacityBottom = getResources().getDimensionPixelSize(
                 R.dimen.detail_card_top_margin);
-        setHasOptionsMenu(true);
 
     }
-
 
 
     public ArticleDetailActivity getActivityCast() {
@@ -177,7 +172,118 @@ public class ArticleDetailFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
             Bundle savedInstanceState) {
 
+        if(savedInstanceState != null){
+            mMaxNrOfItemsInRecyclerView = savedInstanceState.getInt(MAX_ITEMS_NR);
+            mCurrentNrOfItemsInRecyclerView = savedInstanceState.getInt(CURRENT_ITEMS_NR);
+            mRecyclerViewPosition = savedInstanceState.getInt(SELECTED_ITEM_NR);
+        }
+
         mRootView = inflater.inflate(R.layout.fragment_article_detail, container, false);
+        mPhotoView = mRootView.findViewById(R.id.photo);
+        mTitleView = mRootView.findViewById(R.id.article_title);
+        mBylineView = mRootView.findViewById(R.id.article_byline);
+        mRecyclerView = mRootView.findViewById(R.id.article_body_recycler_view);
+        mPhotoContainerView = mRootView.findViewById(R.id.photo_container);
+        mDrawInsetsFrameLayout = mRootView.findViewById(R.id.draw_insets_frame_layout);
+
+        setupSwipeAndTouchListeners();
+        setupInsetsCallback();
+        setupScrollViewCallbacks();
+        setupFABOnclickListener();
+        setupRecyclerView();
+
+        mStatusBarColorDrawable = new ColorDrawable(0);
+
+        mBylineView.setMovementMethod(new LinkMovementMethod());
+
+        bindViews();
+        updateStatusBar();
+        setupViewModel();
+        scrollToTouchedParagraph();
+
+        return mRootView;
+    }
+
+    private void setupRecyclerView() {
+        TextAdapter textAdapter = new TextAdapter();
+        mRecyclerView.setAdapter(textAdapter);
+        mLinearLayoutManager = new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false);
+        mRecyclerView.setLayoutManager(mLinearLayoutManager);
+    }
+
+    private void scrollToTouchedParagraph() {
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+
+                    View view = mRecyclerView.getChildAt(mRecyclerViewPosition);
+                    float y = 0;
+                    if(view != null){
+                        y = view.getY();
+                    }
+                    mScrollView.smoothScrollTo(0, (int) y + 100);
+
+
+            }
+        }, 200);
+    }
+
+    private void setupFABOnclickListener() {
+        mRootView.findViewById(R.id.share_fab).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                startActivity(Intent.createChooser(ShareCompat.IntentBuilder.from(getActivity())
+                        .setType("text/plain")
+                        .setText("Some sample text")
+                        .getIntent(), getString(R.string.action_share)));
+            }
+        });
+    }
+
+    private void setupScrollViewCallbacks() {
+        mScrollView = (ObservableScrollView) mRootView.findViewById(R.id.scrollview);
+        mScrollView.setCallbacks(new ObservableScrollView.Callbacks() {
+            @Override
+            public void onScrollChanged() {
+                mScrollY = mScrollView.getScrollY();
+                getActivityCast().onUpButtonFloorChanged(mItemId, ArticleDetailFragment.this);
+                mPhotoContainerView.setTranslationY((int) (mScrollY - mScrollY / PARALLAX_FACTOR));
+
+                updateStatusBar();
+                increaseNrOfParagraphs();
+
+            }
+        });
+    }
+
+    private void setupInsetsCallback() {
+        mDrawInsetsFrameLayout.setOnInsetsCallback(new DrawInsetsFrameLayout.OnInsetsCallback() {
+            @Override
+            public void onInsetsChanged(Rect insets) {
+                mTopInset = insets.top;
+            }
+        });
+    }
+
+    private void increaseNrOfParagraphs() {
+        View view = (View) mScrollView.getChildAt(0);
+        int diff = view.getBottom() - (mScrollView.getHeight() + mScrollY);
+
+
+        if (diff == 0){
+            if(mCurrentNrOfItemsInRecyclerView == mMaxNrOfItemsInRecyclerView){
+                return;
+            }else if(mCurrentNrOfItemsInRecyclerView + 10 > mMaxNrOfItemsInRecyclerView){
+                mCurrentNrOfItemsInRecyclerView = mMaxNrOfItemsInRecyclerView;
+            }else {
+                mCurrentNrOfItemsInRecyclerView += 10;
+            }
+
+            mRecyclerView.getAdapter().notifyItemInserted(mCurrentNrOfItemsInRecyclerView);
+        }
+    }
+
+    private void setupSwipeAndTouchListeners() {
         FrameLayout frameLayout = mRootView.findViewById(R.id.scrollview);
         frameLayout.setOnTouchListener(new OnSwipeListener(getActivity()){
             @Override
@@ -198,107 +304,6 @@ public class ArticleDetailFragment extends Fragment {
                 return super.onTouch(view, motionEvent);
             }
         });
-        mDrawInsetsFrameLayout = (DrawInsetsFrameLayout)
-                mRootView.findViewById(R.id.draw_insets_frame_layout);
-        mDrawInsetsFrameLayout.setOnInsetsCallback(new DrawInsetsFrameLayout.OnInsetsCallback() {
-            @Override
-            public void onInsetsChanged(Rect insets) {
-                mTopInset = insets.top;
-            }
-        });
-
-        mScrollView = (ObservableScrollView) mRootView.findViewById(R.id.scrollview);
-        mScrollView.setCallbacks(new ObservableScrollView.Callbacks() {
-            @Override
-            public void onScrollChanged() {
-                mScrollY = mScrollView.getScrollY();
-                getActivityCast().onUpButtonFloorChanged(mItemId, ArticleDetailFragment.this);
-                mPhotoContainerView.setTranslationY((int) (mScrollY - mScrollY / PARALLAX_FACTOR));
-                updateStatusBar();
-
-                View view = (View) mScrollView.getChildAt(0);
-                int diff = view.getBottom() - (mScrollView.getHeight() + mScrollY);
-
-
-
-                if (diff == 0){
-                    if(mCurrentNrOfItemsInRecyclerView == mMaxNrOfItemsInRecyclerView){
-                        return;
-                    }else if(mCurrentNrOfItemsInRecyclerView + 10 > mMaxNrOfItemsInRecyclerView){
-                        mCurrentNrOfItemsInRecyclerView = mMaxNrOfItemsInRecyclerView;
-                    }else {
-                        mCurrentNrOfItemsInRecyclerView += 10;
-                    }
-
-
-                    mRecyclerView.getAdapter().notifyItemInserted(mCurrentNrOfItemsInRecyclerView);
-
-                    //mRecyclerView.smoothScrollToPosition(mScrollY);
-
-                }
-
-            }
-        });
-
-        mPhotoView = (ImageView) mRootView.findViewById(R.id.photo);
-        mPhotoContainerView = mRootView.findViewById(R.id.photo_container);
-
-        mStatusBarColorDrawable = new ColorDrawable(0);
-
-        mRootView.findViewById(R.id.share_fab).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                startActivity(Intent.createChooser(ShareCompat.IntentBuilder.from(getActivity())
-                        .setType("text/plain")
-                        .setText("Some sample text")
-                        .getIntent(), getString(R.string.action_share)));
-            }
-        });
-
-        mTextProgressBar = (ProgressBar) mRootView.findViewById(R.id.text_progress_bar);
-
-
-        mTitleView = (TextView) mRootView.findViewById(R.id.article_title);
-        mBylineView = (TextView) mRootView.findViewById(R.id.article_byline);
-        mBylineView.setMovementMethod(new LinkMovementMethod());
-        mRecyclerView = (RecyclerView) mRootView.findViewById(R.id.article_body_recycler_view);
-        TextAdapter textAdapter = new TextAdapter();
-        mRecyclerView.setAdapter(textAdapter);
-        mLinearLayoutManager = new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false);
-        mRecyclerView.setLayoutManager(mLinearLayoutManager);
-
-
-
-
-        if(savedInstanceState != null){
-            mMaxNrOfItemsInRecyclerView = savedInstanceState.getInt(MAX_ITEMS_NR);
-            mCurrentNrOfItemsInRecyclerView = savedInstanceState.getInt(CURRENT_ITEMS_NR);
-            mRecyclerViewPosition = savedInstanceState.getInt(SELECTED_ITEM_NR);
-        }
-
-
-
-        bindViews();
-        updateStatusBar();
-
-        setupViewModel();
-
-        new Handler().postDelayed(new Runnable() {
-            @Override
-            public void run() {
-
-                    View view = mRecyclerView.getChildAt(mRecyclerViewPosition);
-                    float y = 0;
-                    if(view != null){
-                        y = view.getY();
-                    }
-                    mScrollView.smoothScrollTo(0, (int) y + 100);
-
-
-            }
-        }, 200);
-
-        return mRootView;
     }
 
     @Override
@@ -333,7 +338,6 @@ public class ArticleDetailFragment extends Fragment {
                             @Override
                             public void run() {
                                 bindViews();
-                                //mRecyclerView.getAdapter().notifyDataSetChanged();
                             }
                         });
                     }
@@ -368,10 +372,8 @@ public class ArticleDetailFragment extends Fragment {
     public void onSaveInstanceState(@NonNull Bundle outState) {
         outState.putInt(CURRENT_ITEMS_NR, mCurrentNrOfItemsInRecyclerView);
         outState.putInt(MAX_ITEMS_NR, mMaxNrOfItemsInRecyclerView);
-        //LinearLayoutManager linearLayoutManager = (LinearLayoutManager) mRecyclerView.getLayoutManager();
-       //View focusedChild = (View) linearLayoutManager.getChildAt(5);
-       //mRecyclerViewPosition = mRecyclerView.getChildAdapterPosition(focusedChild);
         outState.putInt(SELECTED_ITEM_NR, mRecyclerViewPosition);
+
         super.onSaveInstanceState(outState);
 
     }
@@ -428,56 +430,59 @@ public class ArticleDetailFragment extends Fragment {
             mRootView.setVisibility(View.VISIBLE);
             //mRootView.animate().alpha(1);
             mTitleView.setText(mBook.getTitle());
-            Date publishedDate = parsePublishedDate();
-            if (!publishedDate.before(START_OF_EPOCH.getTime())) {
-                mBylineView.setText(Html.fromHtml(
-                        DateUtils.getRelativeTimeSpanString(
-                                publishedDate.getTime(),
-                                System.currentTimeMillis(), DateUtils.HOUR_IN_MILLIS,
-                                DateUtils.FORMAT_ABBREV_ALL).toString()
-                                + " by <font color='#ffffff'>"
-                                + mBook.getAuthor()
-                                + "</font>"));
-
-            } else {
-                // If date is before 1902, just show the string
-                mBylineView.setText(Html.fromHtml(
-                        outputFormat.format(publishedDate) + " by <font color='#ffffff'>"
-                        + mBook.getAuthor()
-                                + "</font>"));
-
-            }
-
-            //mTextProgressBar.setVisibility(View.VISIBLE);
-
-
-            ImageLoaderHelper.getInstance(getActivity()).getImageLoader()
-                    .get(mBook.getPhotoUrl(), new ImageLoader.ImageListener() {
-                        @Override
-                        public void onResponse(ImageLoader.ImageContainer imageContainer, boolean b) {
-                            Bitmap bitmap = imageContainer.getBitmap();
-                            if (bitmap != null) {
-                                Palette p = Palette.generate(bitmap, 12);
-                                mMutedColor = p.getDarkMutedColor(0xFF333333);
-                                mPhotoView.setImageBitmap(imageContainer.getBitmap());
-                                mRootView.findViewById(R.id.meta_bar)
-                                        .setBackgroundColor(mMutedColor);
-                                updateStatusBar();
-                            }
-                        }
-
-                        @Override
-                        public void onErrorResponse(VolleyError volleyError) {
-
-                        }
-                    });
+            setupBylineView();
+            loadImage();
 
         } else {
             mRootView.setVisibility(View.GONE);
             mTitleView.setText("N/A");
             mBylineView.setText("N/A" );
-            //bodyView.setText("N/A");
         }
+    }
+
+    private void setupBylineView() {
+        Date publishedDate = parsePublishedDate();
+        if (!publishedDate.before(START_OF_EPOCH.getTime())) {
+            mBylineView.setText(Html.fromHtml(
+                    DateUtils.getRelativeTimeSpanString(
+                            publishedDate.getTime(),
+                            System.currentTimeMillis(), DateUtils.HOUR_IN_MILLIS,
+                            DateUtils.FORMAT_ABBREV_ALL).toString()
+                            + " by <font color='#ffffff'>"
+                            + mBook.getAuthor()
+                            + "</font>"));
+
+        } else {
+            // If date is before 1902, just show the string
+            mBylineView.setText(Html.fromHtml(
+                    outputFormat.format(publishedDate) + " by <font color='#ffffff'>"
+                    + mBook.getAuthor()
+                            + "</font>"));
+
+        }
+    }
+
+    private void loadImage() {
+        ImageLoaderHelper.getInstance(getActivity()).getImageLoader()
+                .get(mBook.getPhotoUrl(), new ImageLoader.ImageListener() {
+                    @Override
+                    public void onResponse(ImageLoader.ImageContainer imageContainer, boolean b) {
+                        Bitmap bitmap = imageContainer.getBitmap();
+                        if (bitmap != null) {
+                            Palette p = Palette.generate(bitmap, 12);
+                            mMutedColor = p.getDarkMutedColor(0xFF333333);
+                            mPhotoView.setImageBitmap(imageContainer.getBitmap());
+                            mRootView.findViewById(R.id.meta_bar)
+                                    .setBackgroundColor(mMutedColor);
+                            updateStatusBar();
+                        }
+                    }
+
+                    @Override
+                    public void onErrorResponse(VolleyError volleyError) {
+
+                    }
+                });
     }
 
 
@@ -493,10 +498,6 @@ public class ArticleDetailFragment extends Fragment {
     }
 
     private class TextAdapter extends RecyclerView.Adapter<TextAdapter.TextAdapterViewHolder>{
-
-        public void updateAdapter(){
-            this.notifyDataSetChanged();
-        }
 
         @Override
         public TextAdapter.TextAdapterViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {

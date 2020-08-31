@@ -60,10 +60,20 @@ implements InternetCheckAsyncTask.ShowConnectionError{
     private SimpleDateFormat outputFormat = new SimpleDateFormat();
     // Most time functions can only handle 1902 - 2037
     private GregorianCalendar START_OF_EPOCH = new GregorianCalendar(2,1,1);
+    private ArticleClickListener mArticleClickListener;
 
     public ArticleListFragment() {
     }
 
+    public interface ArticleClickListener{
+        public void onArticleClick();
+    }
+
+    @Override
+    public void onAttach(@NonNull Context context) {
+        mArticleClickListener = (ArticleClickListener) context;
+        super.onAttach(context);
+    }
 
     @Nullable
     @Override
@@ -244,6 +254,7 @@ implements InternetCheckAsyncTask.ShowConnectionError{
             view.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
+                    mArticleClickListener.onArticleClick();
                     openDetailActivityWithAnimation(vh);
                 }
             });

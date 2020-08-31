@@ -1,7 +1,6 @@
 package com.example.xyzreader.ui;
 
 import android.content.Intent;
-import android.database.Cursor;
 import android.os.Build;
 import android.os.Bundle;
 import android.transition.Slide;
@@ -17,10 +16,8 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
-import androidx.loader.app.LoaderManager;
 
 import com.example.xyzreader.R;
-import com.example.xyzreader.data.ArticleLoader;
 import com.example.xyzreader.model.Book;
 import com.example.xyzreader.model.ReaderViewModel;
 
@@ -35,22 +32,19 @@ public class ArticleDetailActivity extends AppCompatActivity
         implements
 ArticleDetailFragment.SwipeListener{
 
+    private final String TAG = ArticleDetailActivity.class.getSimpleName();
     private final String STATE_SELECTED_ITEM_ID = "selected_item_id";
 
 
     private long mSelectedFragmentId;
     private ReaderViewModel mModel;
-    private Book mBook;
     private List<Book> mBooks;
 
-    private final String TAG = ArticleDetailActivity.class.getSimpleName();
     private int mSelectedItemUpButtonFloor = Integer.MAX_VALUE;
     private int mTopInset;
-    private final long DEFAULT_BOOK_ID = 1;
 
     private View mUpButtonContainer;
     private View mUpButton;
-    private FrameLayout mFragmentContainer;
 
     @Override
     public void onAttachFragment(@NonNull Fragment fragment) {
@@ -70,12 +64,6 @@ ArticleDetailFragment.SwipeListener{
         }
         setContentView(R.layout.activity_article_detail);
 
-        Intent intent = getIntent();
-        long bookId = intent.getLongExtra(EXTRA_ARTICLE_ID, DEFAULT_BOOK_ID);
-
-
-
-
         mUpButtonContainer = findViewById(R.id.up_container);
 
         mUpButton = findViewById(R.id.action_up);
@@ -85,8 +73,6 @@ ArticleDetailFragment.SwipeListener{
                 onSupportNavigateUp();
             }
         });
-
-        mFragmentContainer = findViewById(R.id.details_fragment_container);
 
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -106,38 +92,31 @@ ArticleDetailFragment.SwipeListener{
             if (getIntent() != null && getIntent().getExtras() != null) {
                 mSelectedFragmentId = getIntent().getLongExtra(EXTRA_ARTICLE_ID, 2);
             }
+            addDetailsFragment();
 
-            FragmentManager fragmentManager = getSupportFragmentManager();
-            Fragment fragment = ArticleDetailFragment.newInstance(mSelectedFragmentId);
-            fragmentManager.beginTransaction()
-                    .add(R.id.details_fragment_container, fragment)
-                    .commit();
         }else{
             mSelectedFragmentId = savedInstanceState.getLong(STATE_SELECTED_ITEM_ID);
         }
 
 
-
-
-
         setupViewModel();
+    }
+
+    private void addDetailsFragment() {
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        Fragment fragment = ArticleDetailFragment.newInstance(mSelectedFragmentId);
+        fragmentManager.beginTransaction()
+                .add(R.id.details_fragment_container, fragment)
+                .commit();
     }
 
     private void setupViewModel() {
         mModel = ViewModelProviders.of(this).get(ReaderViewModel.class);
-        mModel.getSelectedBook().observe(this, new Observer<Book>() {
-            @Override
-            public void onChanged(Book book) {
-                Log.d(TAG, "Updating selected book: ");
-                mBook = book;
-            }
-        });
 
         mModel.getBooks().observe(this, new Observer<List<Book>>() {
             @Override
             public void onChanged(List<Book> books) {
                 Log.d(TAG, "Updating books data set");
-
                 mBooks = books;
                 mModel.selectBook(books.get((int)mSelectedFragmentId));
             }
@@ -170,26 +149,11 @@ ArticleDetailFragment.SwipeListener{
 
     @Override
     public void swipeRight() {
-        Log.d(TAG, "Swipe left");
+        Log.d(TAG, "Swipe right");
         if(mSelectedFragmentId > 0){
             --mSelectedFragmentId;
-            FragmentManager fragmentManager = getSupportFragmentManager();
-            mModel.selectBook(mModel.getBooks().getValue().get((int)mSelectedFragmentId));
-            ArticleDetailFragment fragment = ArticleDetailFragment.newInstance(mSelectedFragmentId);
-            mSelectedItemUpButtonFloor = fragment.getUpButtonFloor();
-
-            Slide exitTransition = new Slide();
-            exitTransition.setSlideEdge(Gravity.LEFT);
-            exitTransition.setDuration(300);
-            getWindow().setExitTransition(exitTransition);
-
-            fragmentManager.beginTransaction()
-                    .setCustomAnimations(R.anim.fragment_enter_right,
-                            R.anim.fragment_exit_right,
-                            R.anim.fragment_enter_left,
-                            R.anim.fragment_exit_left)
-                    .replace(R.id.details_fragment_container, fragment)
-                    .commit();
+            replaceFragmentWithAnimation(Gravity.LEFT, R.anim.fragment_enter_right, R.anim.fragment_exit_right,
+                    R.anim.fragment_enter_left, R.anim.fragment_exit_left);
         }
     }
 
@@ -198,23 +162,30 @@ ArticleDetailFragment.SwipeListener{
         Log.d(TAG, "Swipe left");
         if(mBooks.size() - 1 > mSelectedFragmentId){
             ++mSelectedFragmentId;
-            FragmentManager fragmentManager = getSupportFragmentManager();
-            mModel.selectBook(mModel.getBooks().getValue().get((int) mSelectedFragmentId) );
-            ArticleDetailFragment fragment = ArticleDetailFragment.newInstance(mSelectedFragmentId);
-            mSelectedItemUpButtonFloor = fragment.getUpButtonFloor();
-            updateUpButtonPosition();
-
-            Slide exitTransition = new Slide();
-            exitTransition.setSlideEdge(Gravity.RIGHT);
-            exitTransition.setDuration(300);
-            getWindow().setExitTransition(exitTransition);
-            fragmentManager.beginTransaction()
-                    .setCustomAnimations(R.anim.fragment_enter_left,
-                            R.anim.fragment_exit_left,
-                            R.anim.fragment_enter_right,
-                            R.anim.fragment_exit_right)
-                    .replace(R.id.details_fragment_container, fragment)
-                    .commit();
+            replaceFragmentWithAnimation(Gravity.RIGHT, R.anim.fragment_enter_left, R.anim.fragment_exit_left,
+                    R.anim.fragment_enter_right, R.anim.fragment_exit_right);
         }
+    }
+
+
+    private void replaceFragmentWithAnimation(int left, int p, int p2, int p3, int p4) {
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        mModel.selectBook(mModel.getBooks().getValue().get((int) mSelectedFragmentId));
+        ArticleDetailFragment fragment = ArticleDetailFragment.newInstance(mSelectedFragmentId);
+        mSelectedItemUpButtonFloor = fragment.getUpButtonFloor();
+        updateUpButtonPosition();
+
+        Slide exitTransition = new Slide();
+        exitTransition.setSlideEdge(left);
+        exitTransition.setDuration(300);
+        getWindow().setExitTransition(exitTransition);
+
+        fragmentManager.beginTransaction()
+                .setCustomAnimations(p,
+                        p2,
+                        p3,
+                        p4)
+                .replace(R.id.details_fragment_container, fragment)
+                .commit();
     }
 }
