@@ -4,7 +4,6 @@ import android.app.ActivityOptions;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -33,7 +32,7 @@ public class ArticleListActivity extends AppCompatActivity implements
 
     private static final String TAG = ArticleListActivity.class.getSimpleName();
     private static final String SELECTED_POSITION = "selected_position";
-    private final int DEFAULT_FRAGMENT_POSITION = 0;
+    private final int DEFAULT_FRAGMENT_POSITION = 1;
     private boolean mIsTwoPane;
     private int mPosition;
     private ReaderViewModel mModel;
@@ -54,10 +53,14 @@ public class ArticleListActivity extends AppCompatActivity implements
             addNewArticleListFragment();
             addNewDetailsFragment();
         }else{
-            //refreshFragments(savedInstanceState, fragmentManager);
+            setupFragmentPosition(savedInstanceState);
         }
 
         setupViewModel();
+    }
+
+    private void setupFragmentPosition(Bundle savedInstanceState) {
+        mPosition = savedInstanceState.getInt(SELECTED_POSITION);
     }
 
     private void setupViewModel() {
@@ -68,7 +71,7 @@ public class ArticleListActivity extends AppCompatActivity implements
             public void onChanged(List<Book> books) {
                 Log.d(TAG, "Updating books data set");
                 mBooks = books;
-                mModel.selectBook(mBooks.get(DEFAULT_FRAGMENT_POSITION));
+                mModel.selectBook(mBooks.get(mPosition));
             }
         });
     }
@@ -81,7 +84,7 @@ public class ArticleListActivity extends AppCompatActivity implements
     }
 
     private void addNewDetailsFragment() {
-        Fragment fragment = ArticleDetailFragment.newInstance(1);
+        Fragment fragment = ArticleDetailFragment.newInstance(3);
         mFragmentManager.beginTransaction()
                 .add(R.id.details_fragment_container, fragment)
                 .commit();
