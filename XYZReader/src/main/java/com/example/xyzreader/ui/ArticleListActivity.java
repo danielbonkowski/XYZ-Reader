@@ -4,6 +4,7 @@ import android.app.ActivityOptions;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -110,13 +111,14 @@ public class ArticleListActivity extends AppCompatActivity implements
     }
 
     private void openDetailActivityWithAnimation(ArticleListFragment.ArticleViewHolder viewHolder) {
+        ImageView imageView = viewHolder.thumbnailView;
         Intent intent = new Intent(this, ArticleDetailActivity.class);
         intent.putExtra(EXTRA_ARTICLE_ID, (long) viewHolder.getAdapterPosition());
         Bundle bundle = ActivityOptions
                 .makeSceneTransitionAnimation(
                         this,
-                        viewHolder.thumbnailView,
-                        viewHolder.thumbnailView.getTransitionName())
+                        imageView,
+                        imageView.getTransitionName())
                 .toBundle();
 
         startActivity(intent, bundle);
