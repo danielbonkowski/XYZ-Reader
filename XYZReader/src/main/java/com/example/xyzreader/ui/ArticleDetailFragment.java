@@ -1,9 +1,7 @@
 package com.example.xyzreader.ui;
 
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Rect;
@@ -32,12 +30,9 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
@@ -54,7 +49,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageLoader;
 import com.example.xyzreader.R;
-import com.example.xyzreader.data.ItemsCounterService;
 import com.example.xyzreader.model.AppExecutors;
 import com.example.xyzreader.model.Book;
 import com.example.xyzreader.model.ReaderViewModel;
@@ -91,6 +85,7 @@ public class ArticleDetailFragment extends Fragment {
     private int mCurrentNrOfItemsInRecyclerView = 10;
     private String[] mBodyTextArray;
 
+    private Context mContext;
     private TextView mTitleView;
     private TextView mBylineView;
     private RecyclerView mRecyclerView;
@@ -100,13 +95,12 @@ public class ArticleDetailFragment extends Fragment {
     private int mRecyclerViewPosition;
     private LinearLayoutManager mLinearLayoutManager;
 
-    private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.sss");
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.sss");
     // Use default locale format
-    private SimpleDateFormat outputFormat = new SimpleDateFormat();
+    private final SimpleDateFormat outputFormat = new SimpleDateFormat();
     // Most time functions can only handle 1902 - 2037
-    private GregorianCalendar START_OF_EPOCH = new GregorianCalendar(2,1,1);
+    private final GregorianCalendar START_OF_EPOCH = new GregorianCalendar(2,1,1);
     private SwipeListener mSwipeListener;
-    Context mContext;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -123,8 +117,8 @@ public class ArticleDetailFragment extends Fragment {
     }
 
     public interface SwipeListener{
-        public void swipeRight();
-        public void swipeLeft();
+        void swipeRight();
+        void swipeLeft();
     }
 
     public void setSwipeListener(SwipeListener swipeListener){
@@ -253,7 +247,7 @@ public class ArticleDetailFragment extends Fragment {
                 increaseNrOfParagraphs();
 
                 if(getActivity() instanceof ArticleDetailActivity){
-                    getActivityCast().onUpButtonFloorChanged(mItemId, ArticleDetailFragment.this);
+                    getActivityCast().onUpButtonFloorChanged(ArticleDetailFragment.this);
                 }
 
             }
@@ -289,25 +283,27 @@ public class ArticleDetailFragment extends Fragment {
 
     private void setupSwipeAndTouchListeners() {
         FrameLayout frameLayout = mRootView.findViewById(R.id.scrollview);
-        frameLayout.setOnTouchListener(new OnSwipeListener(getActivity()){
-            @Override
-            public void leftSwipe() {
-                Log.d(TAG, "Swipe left fragment");
-                mSwipeListener.swipeLeft();
-            }
+        if(mSwipeListener != null){
+            frameLayout.setOnTouchListener(new OnSwipeListener(getActivity()){
+                @Override
+                public void leftSwipe() {
+                    Log.d(TAG, "Swipe left fragment");
+                    mSwipeListener.swipeLeft();
+                }
 
-            @Override
-            public void rightSwipe() {
-                Log.d(TAG, "Swipe right fragment");
-                mSwipeListener.swipeRight();
-            }
+                @Override
+                public void rightSwipe() {
+                    Log.d(TAG, "Swipe right fragment");
+                    mSwipeListener.swipeRight();
+                }
 
-            @Override
-            public boolean onTouch(View view, MotionEvent motionEvent) {
-                Log.d(TAG, "Touch fragment");
-                return super.onTouch(view, motionEvent);
-            }
-        });
+                @Override
+                public boolean onTouch(View view, MotionEvent motionEvent) {
+                    Log.d(TAG, "Touch fragment");
+                    return super.onTouch(view, motionEvent);
+                }
+            });
+        }
     }
 
     @Override
@@ -398,14 +394,14 @@ public class ArticleDetailFragment extends Fragment {
     }
 
     static float progress(float v, float min, float max) {
-        return constrain((v - min) / (max - min), 0, 1);
+        return constrain((v - min) / (max - min));
     }
 
-    static float constrain(float val, float min, float max) {
-        if (val < min) {
-            return min;
-        } else if (val > max) {
-            return max;
+    static float constrain(float val) {
+        if (val < (float) 0) {
+            return (float) 0;
+        } else if (val > (float) 1) {
+            return (float) 1;
         } else {
             return val;
         }
@@ -506,8 +502,7 @@ public class ArticleDetailFragment extends Fragment {
         @Override
         public TextAdapter.TextAdapterViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             View view = getActivity().getLayoutInflater().inflate(R.layout.list_item_text, parent, false);
-            TextAdapterViewHolder textAdapterViewHolder = new TextAdapterViewHolder(view);
-            return textAdapterViewHolder;
+            return new TextAdapterViewHolder(view);
         }
 
         @Override
@@ -542,7 +537,7 @@ public class ArticleDetailFragment extends Fragment {
 
         public class TextAdapterViewHolder extends RecyclerView.ViewHolder {
 
-            AppCompatTextView appCompatTextView;
+            final AppCompatTextView appCompatTextView;
 
             public TextAdapterViewHolder(View itemView) {
                 super(itemView);

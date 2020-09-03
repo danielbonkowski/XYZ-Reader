@@ -52,16 +52,11 @@ public class ObservableScrollView extends NestedScrollView {
         }
     }
 
-    @Override
-    public int computeVerticalScrollRange() {
-        return super.computeVerticalScrollRange();
-    }
-
     public void setCallbacks(Callbacks listener) {
         mCallbacks = listener;
     }
 
-    public static interface Callbacks {
-        public void onScrollChanged();
+    public interface Callbacks {
+        void onScrollChanged();
     }
 }

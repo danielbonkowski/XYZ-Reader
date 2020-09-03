@@ -22,5 +22,5 @@ public class AppExecutors {
         return sInstance;
     }
 
-    public Executor diskIO(){ return diskIO; };
+    public Executor diskIO(){ return diskIO; }
 }

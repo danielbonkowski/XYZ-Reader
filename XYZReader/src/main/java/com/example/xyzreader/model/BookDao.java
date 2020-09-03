@@ -19,12 +19,4 @@ public interface BookDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertBook(Book book);
 
-    @Update(onConflict = OnConflictStrategy.REPLACE)
-    void updateBook(Book book);
-
-    @Delete
-    void deleteBook(Book book);
-
-    @Query("SELECT * FROM book WHERE id = :id")
-    LiveData<Book> loadBookById(int id);
 }

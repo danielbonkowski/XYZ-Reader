@@ -7,14 +7,14 @@ import android.os.AsyncTask;
 
 public class InternetCheckAsyncTask extends AsyncTask<Context, Void, Boolean> {
 
-    private ShowConnectionError mShowConnectionError;
+    private final ShowConnectionError mShowConnectionError;
 
     public InternetCheckAsyncTask(ShowConnectionError listener){
         mShowConnectionError = listener;
     }
 
     public interface ShowConnectionError{
-        public void showError();
+        void showError();
     }
 
     @Override

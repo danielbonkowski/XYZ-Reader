@@ -57,18 +57,18 @@ implements InternetCheckAsyncTask.ShowConnectionError{
     private RecyclerView.LayoutManager mLayoutManager;
     private boolean mIsCard;
 
-    private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.sss");
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.sss");
     // Use default locale format
-    private SimpleDateFormat outputFormat = new SimpleDateFormat();
+    private final SimpleDateFormat outputFormat = new SimpleDateFormat();
     // Most time functions can only handle 1902 - 2037
-    private GregorianCalendar START_OF_EPOCH = new GregorianCalendar(2,1,1);
+    private final GregorianCalendar START_OF_EPOCH = new GregorianCalendar(2,1,1);
     private ArticleClickListener mArticleClickListener;
 
     public ArticleListFragment() {
     }
 
     public interface ArticleClickListener{
-        public void onArticleClick(ArticleViewHolder viewHolder);
+        void onArticleClick(ArticleViewHolder viewHolder);
     }
 
     @Override
@@ -163,12 +163,6 @@ implements InternetCheckAsyncTask.ShowConnectionError{
     }
 
 
-
-    @Override
-    public void onResume() {
-        super.onResume();
-    }
-
     private void setupViewModel() {
         mModel = ViewModelProviders.of(getActivity()).get(ReaderViewModel.class);
         mModel.getBooks().observe(getActivity(), new Observer<List<Book>>() {
@@ -198,7 +192,7 @@ implements InternetCheckAsyncTask.ShowConnectionError{
         getActivity().unregisterReceiver(mRefreshingReceiver);
     }
 
-    private BroadcastReceiver mRefreshingReceiver = new BroadcastReceiver() {
+    private final BroadcastReceiver mRefreshingReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (UpdaterService.BROADCAST_ACTION_STATE_CHANGE.equals(intent.getAction())) {
@@ -334,9 +328,9 @@ implements InternetCheckAsyncTask.ShowConnectionError{
     }
 
     public static class ArticleViewHolder extends RecyclerView.ViewHolder {
-        public DynamicHeightNetworkImageView thumbnailView;
-        public TextView titleView;
-        public TextView subtitleView;
+        public final DynamicHeightNetworkImageView thumbnailView;
+        public final TextView titleView;
+        public final TextView subtitleView;
 
         public ArticleViewHolder(View view) {
             super(view);

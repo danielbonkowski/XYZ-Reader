@@ -1,6 +1,5 @@
 package com.example.xyzreader.ui;
 
-import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.transition.Slide;
@@ -8,7 +7,6 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.WindowInsets;
-import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -131,7 +129,7 @@ ArticleDetailFragment.SwipeListener{
         super.onSaveInstanceState(outState);
     }
 
-    public void onUpButtonFloorChanged(long itemId, ArticleDetailFragment fragment) {
+    public void onUpButtonFloorChanged(ArticleDetailFragment fragment) {
         mSelectedItemUpButtonFloor = fragment.getUpButtonFloor();
         updateUpButtonPosition();
     }
