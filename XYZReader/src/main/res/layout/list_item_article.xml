@@ -2,9 +2,9 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="8dp"
-    android:clickable="true"
-    android:focusable="true"
+    android:layout_margin="@dimen/main_cardview_margin"
+    android:clickable="@bool/detail_card_is_clickable"
+    android:focusable="@bool/detail_card_is_focusable"
     android:elevation="@dimen/main_cardview_elevation"
     android:foreground="?selectableItemBackground">
 
@@ -26,25 +26,24 @@
             android:id="@+id/article_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingLeft="16dp"
-            android:paddingTop="16dp"
-            android:paddingRight="16dp"
-            android:paddingBottom="4dp"
+            android:paddingLeft="@dimen/main_title_padding_left"
+            android:paddingTop="@dimen/main_title_padding_top"
+            android:paddingRight="@dimen/main_title_padding_right"
+            android:paddingBottom="@dimen/main_title_padding_bottom"
             android:textColor="@color/theme_primary_text"
             android:ellipsize="end"
             android:textSize="@dimen/main_title_text_size"
-            android:maxLines="4" />
+            android:maxLines="@integer/main_title_max_lines" />
 
         <TextView
             android:id="@+id/article_subtitle"
-            style="@style/TextAppearance.AppCompat.Display1"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingLeft="16dp"
-            android:paddingRight="16dp"
-            android:paddingBottom="16dp"
+            android:paddingLeft="@dimen/main_author_text_padding_left"
+            android:paddingRight="@dimen/main_author_text_padding_right"
+            android:paddingBottom="@dimen/main_author_text_padding_bottom"
             android:textColor="@color/theme_primary_text"
-            android:maxLines="2"
+            android:maxLines="@integer/main_author_max_lines"
             android:textSize="@dimen/main_author_text_size"
             android:ellipsize="end" />
     </LinearLayout>
