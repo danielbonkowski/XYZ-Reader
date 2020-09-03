@@ -33,7 +33,7 @@ public class ArticleListActivity extends AppCompatActivity implements
 
     private static final String TAG = ArticleListActivity.class.getSimpleName();
     private static final String SELECTED_POSITION = "selected_position";
-    private final int DEFAULT_FRAGMENT_POSITION = 1;
+    private final int DEFAULT_FRAGMENT_POSITION = 0;
     private boolean mIsTwoPane;
     private int mPosition;
     private ReaderViewModel mModel;
@@ -72,7 +72,9 @@ public class ArticleListActivity extends AppCompatActivity implements
             public void onChanged(List<Book> books) {
                 Log.d(TAG, "Updating books data set");
                 mBooks = books;
-                mModel.selectBook(mBooks.get(mPosition));
+                if(mBooks.size() > 0){
+                    mModel.selectBook(mBooks.get(mPosition));
+                }
             }
         });
     }
@@ -85,7 +87,7 @@ public class ArticleListActivity extends AppCompatActivity implements
     }
 
     private void addNewDetailsFragment() {
-        Fragment fragment = ArticleDetailFragment.newInstance(3);
+        Fragment fragment = ArticleDetailFragment.newInstance(DEFAULT_FRAGMENT_POSITION);
         mFragmentManager.beginTransaction()
                 .add(R.id.details_fragment_container, fragment)
                 .commit();

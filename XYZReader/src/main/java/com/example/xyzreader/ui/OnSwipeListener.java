@@ -50,8 +50,33 @@ public class OnSwipeListener implements View.OnTouchListener {
 
         @Override
         public boolean onFling(MotionEvent motionEvent1, MotionEvent motionEvent2, float speedX, float speedY) {
-            float distanceX = motionEvent2.getX() - motionEvent1.getX();
-            float distanceY = motionEvent2.getY() - motionEvent1.getY();
+            float x1;
+            float y1;
+            float x2;
+            float y2;
+
+            if(motionEvent1 == null && motionEvent2 == null){
+                return false;
+            }
+
+            if(motionEvent1 == null){
+                x1 = motionEvent2.getX();
+                y1 = motionEvent2.getY();
+            }else {
+                x1 = motionEvent1.getX();
+                y1 = motionEvent1.getY();
+            }
+
+            if(motionEvent2 == null){
+                x2 = motionEvent1.getX();
+                y2 = motionEvent1.getY();
+            }else {
+                x2 = motionEvent2.getX();
+                y2 = motionEvent2.getY();
+            }
+
+            float distanceX = x2 - x1;
+            float distanceY = y2 - y1;
             Log.d(TAG, "Swipe fling");
             if(Math.abs(distanceX) > Math.abs(distanceY) && Math.abs(distanceX) >TRIGGER_AFTER_SWIPED_DISTANCE
                     && Math.abs(speedX) > TRIGGER_AFTER_SWIPED_SPEED){
