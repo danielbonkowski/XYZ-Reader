@@ -8,6 +8,7 @@ import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.Observer;
@@ -36,6 +37,7 @@ public class ArticleListActivity extends AppCompatActivity implements
     private final int DEFAULT_FRAGMENT_POSITION = 0;
     private boolean mIsTwoPane;
     private int mPosition;
+    private Toolbar mToolbar;
     private ReaderViewModel mModel;
     private List<Book> mBooks;
     private FragmentManager mFragmentManager;
@@ -45,6 +47,9 @@ public class ArticleListActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_article_list);
         mIsTwoPane = findViewById(R.id.details_fragment_container) != null;
+
+        mToolbar = findViewById(R.id.toolbar);
+        this.setSupportActionBar(mToolbar);
 
 
         mFragmentManager = getSupportFragmentManager();

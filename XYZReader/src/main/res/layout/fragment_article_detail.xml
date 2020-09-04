@@ -102,7 +102,7 @@
         </FrameLayout>
     </com.example.xyzreader.ui.ObservableScrollView>
 
-    <ImageButton android:id="@+id/share_fab"
+    <com.google.android.material.floatingactionbutton.FloatingActionButton android:id="@+id/share_fab"
         android:stateListAnimator="@animator/fab_state_list_anim"
         android:background="@drawable/add_fab_background"
         android:layout_gravity="bottom|end"
