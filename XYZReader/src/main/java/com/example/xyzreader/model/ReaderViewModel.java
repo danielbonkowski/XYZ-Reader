@@ -7,7 +7,6 @@ import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
-import androidx.lifecycle.ViewModel;
 
 import java.util.List;
 
@@ -16,8 +15,8 @@ public class ReaderViewModel extends AndroidViewModel {
     private static final String TAG = ReaderViewModel.class.getSimpleName();
 
     private final LiveData<List<Book>> books;
-    private final MutableLiveData<Book> selectedBook = new MutableLiveData<Book>();
-    private final MutableLiveData<String[]> selectedBookBodyArray = new MutableLiveData<String[]>();
+    private final MutableLiveData<Book> selectedBook = new MutableLiveData<>();
+    private final MutableLiveData<String[]> selectedBookBodyArray = new MutableLiveData<>();
 
     public ReaderViewModel(@NonNull Application application) {
         super(application);

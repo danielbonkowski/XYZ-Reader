@@ -1,6 +1,5 @@
 package com.example.xyzreader.ui;
 
-import android.app.ActivityOptions;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -37,6 +36,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.Objects;
 
 public class ArticleListFragment extends Fragment
 implements InternetCheckAsyncTask.ShowConnectionError{
@@ -115,7 +115,7 @@ implements InternetCheckAsyncTask.ShowConnectionError{
 
     private void setupSwipeRefreshLayout() {
 
-        mSwipeRefreshLayout = (SwipeRefreshLayout) mRootView.findViewById(R.id.swipe_refresh_layout);
+        mSwipeRefreshLayout = mRootView.findViewById(R.id.swipe_refresh_layout);
         mSwipeRefreshLayout.setProgressViewOffset(false, 50, 50);
         mSwipeRefreshLayout.setColorSchemeResources(R.color.theme_accent);
         mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
@@ -139,7 +139,7 @@ implements InternetCheckAsyncTask.ShowConnectionError{
 
     private void setupArticlesRecyclerView() {
 
-        mArticlesRecyclerView = (RecyclerView) mRootView.findViewById(R.id.books_recycler_view);
+        mArticlesRecyclerView = mRootView.findViewById(R.id.books_recycler_view);
         mArticlesAdapter = new ArticlesAdapter(null);
         mArticlesAdapter.setHasStableIds(true);
         mArticlesRecyclerView.setAdapter(mArticlesAdapter);
@@ -164,7 +164,7 @@ implements InternetCheckAsyncTask.ShowConnectionError{
 
 
     private void setupViewModel() {
-        mModel = ViewModelProviders.of(getActivity()).get(ReaderViewModel.class);
+        mModel = ViewModelProviders.of(Objects.requireNonNull(getActivity())).get(ReaderViewModel.class);
         mModel.getBooks().observe(getActivity(), new Observer<List<Book>>() {
             @Override
             public void onChanged(List<Book> books) {
@@ -176,20 +176,20 @@ implements InternetCheckAsyncTask.ShowConnectionError{
     }
 
     private void refreshArticles() {
-        getActivity().startService(new Intent(getActivity(), UpdaterService.class));
+        Objects.requireNonNull(getActivity()).startService(new Intent(getActivity(), UpdaterService.class));
     }
 
     @Override
     public void onStart() {
         super.onStart();
-        getActivity().registerReceiver(mRefreshingReceiver,
+        Objects.requireNonNull(getActivity()).registerReceiver(mRefreshingReceiver,
                 new IntentFilter(UpdaterService.BROADCAST_ACTION_STATE_CHANGE));
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        getActivity().unregisterReceiver(mRefreshingReceiver);
+        Objects.requireNonNull(getActivity()).unregisterReceiver(mRefreshingReceiver);
     }
 
     private final BroadcastReceiver mRefreshingReceiver = new BroadcastReceiver() {
@@ -311,7 +311,7 @@ implements InternetCheckAsyncTask.ShowConnectionError{
                 String date = mBooks.get(mPosition).getPublishedDate();
                 return dateFormat.parse(date);
             } catch (ParseException ex) {
-                Log.e(TAG, ex.getMessage());
+                Log.e(TAG, Objects.requireNonNull(ex.getMessage()));
                 Log.i(TAG, "passing today's date");
                 return new Date();
             }
@@ -334,9 +334,9 @@ implements InternetCheckAsyncTask.ShowConnectionError{
 
         public ArticleViewHolder(View view) {
             super(view);
-            thumbnailView = (DynamicHeightNetworkImageView) view.findViewById(R.id.thumbnail);
-            titleView = (TextView) view.findViewById(R.id.article_title);
-            subtitleView = (TextView) view.findViewById(R.id.article_subtitle);
+            thumbnailView = view.findViewById(R.id.thumbnail);
+            titleView = view.findViewById(R.id.article_title);
+            subtitleView = view.findViewById(R.id.article_subtitle);
         }
     }
 }

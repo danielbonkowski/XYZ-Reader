@@ -1,7 +1,5 @@
 package com.example.xyzreader.remote;
 
-import android.util.Log;
-
 import java.net.MalformedURLException;
 import java.net.URL;
 
@@ -9,7 +7,7 @@ public class Config {
     public static final URL BASE_URL;
 
     static {
-        URL url = null;
+        URL url;
         try {
             url = new URL("https://go.udacity.com/xyz-reader-json" );
         } catch (MalformedURLException e) {

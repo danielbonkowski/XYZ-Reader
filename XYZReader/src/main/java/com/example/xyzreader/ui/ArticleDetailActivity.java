@@ -20,6 +20,7 @@ import com.example.xyzreader.model.Book;
 import com.example.xyzreader.model.ReaderViewModel;
 
 import java.util.List;
+import java.util.Objects;
 
 import static com.example.xyzreader.ui.ArticleListFragment.EXTRA_ARTICLE_ID;
 
@@ -168,7 +169,7 @@ ArticleDetailFragment.SwipeListener{
 
     private void replaceFragmentWithAnimation(int left, int p, int p2, int p3, int p4) {
         FragmentManager fragmentManager = getSupportFragmentManager();
-        mModel.selectBook(mModel.getBooks().getValue().get((int) mSelectedFragmentId));
+        mModel.selectBook(Objects.requireNonNull(mModel.getBooks().getValue()).get((int) mSelectedFragmentId));
         ArticleDetailFragment fragment = ArticleDetailFragment.newInstance(mSelectedFragmentId);
         mSelectedItemUpButtonFloor = fragment.getUpButtonFloor();
         updateUpButtonPosition();

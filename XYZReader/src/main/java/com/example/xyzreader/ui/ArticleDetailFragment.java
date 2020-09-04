@@ -11,6 +11,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.Objects;
 
 
 import android.os.Build;
@@ -137,7 +138,7 @@ public class ArticleDetailFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        if (getArguments().containsKey(ARG_ITEM_ID)) {
+        if (Objects.requireNonNull(getArguments()).containsKey(ARG_ITEM_ID)) {
             mItemId = getArguments().getLong(ARG_ITEM_ID);
         }
 
@@ -226,7 +227,7 @@ public class ArticleDetailFragment extends Fragment {
         mRootView.findViewById(R.id.share_fab).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                startActivity(Intent.createChooser(ShareCompat.IntentBuilder.from(getActivity())
+                startActivity(Intent.createChooser(ShareCompat.IntentBuilder.from(Objects.requireNonNull(getActivity()))
                         .setType("text/plain")
                         .setText("Some sample text")
                         .getIntent(), getString(R.string.action_share)));
@@ -235,7 +236,7 @@ public class ArticleDetailFragment extends Fragment {
     }
 
     private void setupScrollViewCallbacks() {
-        mScrollView = (ObservableScrollView) mRootView.findViewById(R.id.scrollview);
+        mScrollView = mRootView.findViewById(R.id.scrollview);
         mScrollView.setCallbacks(new ObservableScrollView.Callbacks() {
             @Override
             public void onScrollChanged() {
@@ -264,7 +265,7 @@ public class ArticleDetailFragment extends Fragment {
     }
 
     private void increaseNrOfParagraphs() {
-        View view = (View) mScrollView.getChildAt(0);
+        View view = mScrollView.getChildAt(0);
         int diff = view.getBottom() - (mScrollView.getHeight() + mScrollY);
 
 
@@ -277,7 +278,7 @@ public class ArticleDetailFragment extends Fragment {
                 mCurrentNrOfItemsInRecyclerView += 10;
             }
 
-            mRecyclerView.getAdapter().notifyItemInserted(mCurrentNrOfItemsInRecyclerView);
+            Objects.requireNonNull(mRecyclerView.getAdapter()).notifyItemInserted(mCurrentNrOfItemsInRecyclerView);
         }
     }
 
@@ -311,12 +312,12 @@ public class ArticleDetailFragment extends Fragment {
         Slide exitTransition = new Slide();
         exitTransition.setSlideEdge(Gravity.RIGHT);
         exitTransition.setDuration(300);
-        getActivity().getWindow().setExitTransition(exitTransition);
+        Objects.requireNonNull(getActivity()).getWindow().setExitTransition(exitTransition);
         super.onDestroy();
     }
 
     private void setupViewModel() {
-        mModel = ViewModelProviders.of(getActivity()).get(ReaderViewModel.class);
+        mModel = ViewModelProviders.of(Objects.requireNonNull(getActivity())).get(ReaderViewModel.class);
 
         mModel.getSelectedBook().observe(getActivity(), new Observer<Book>() {
             @Override
@@ -356,7 +357,7 @@ public class ArticleDetailFragment extends Fragment {
                 mModel.getSelectedBookBodyArray().removeObserver(this);
 
                 bindViews();
-                mRecyclerView.getAdapter().notifyDataSetChanged();
+                Objects.requireNonNull(mRecyclerView.getAdapter()).notifyDataSetChanged();
             }
         });
     }
@@ -400,11 +401,7 @@ public class ArticleDetailFragment extends Fragment {
     static float constrain(float val) {
         if (val < (float) 0) {
             return (float) 0;
-        } else if (val > (float) 1) {
-            return (float) 1;
-        } else {
-            return val;
-        }
+        } else return Math.min(val, (float) 1);
     }
 
     private Date parsePublishedDate() {
@@ -412,7 +409,7 @@ public class ArticleDetailFragment extends Fragment {
             String date = mBook.getPublishedDate();
             return dateFormat.parse(date);
         } catch (ParseException ex) {
-            Log.e(TAG, ex.getMessage());
+            Log.e(TAG, Objects.requireNonNull(ex.getMessage()));
             Log.i(TAG, "passing today's date");
             return new Date();
         }
@@ -501,7 +498,7 @@ public class ArticleDetailFragment extends Fragment {
 
         @Override
         public TextAdapter.TextAdapterViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View view = getActivity().getLayoutInflater().inflate(R.layout.list_item_text, parent, false);
+            View view = Objects.requireNonNull(getActivity()).getLayoutInflater().inflate(R.layout.list_item_text, parent, false);
             return new TextAdapterViewHolder(view);
         }
 
@@ -541,7 +538,7 @@ public class ArticleDetailFragment extends Fragment {
 
             public TextAdapterViewHolder(View itemView) {
                 super(itemView);
-                appCompatTextView = (AppCompatTextView) itemView.findViewById(R.id.list_item_text);
+                appCompatTextView = itemView.findViewById(R.id.list_item_text);
             }
         }
     }

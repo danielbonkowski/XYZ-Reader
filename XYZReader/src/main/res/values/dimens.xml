@@ -5,8 +5,6 @@
     <dimen name="main_appbar_title_margin_start">16dp</dimen>
     <dimen name="main_cardview_elevation">1dp</dimen>
     <dimen name="main_cardview_margin">8dp</dimen>
-    <bool name="main_cardview_clickable">true</bool>
-    <bool name="main_cardview_focusable">true</bool>
     <dimen name="main_thumbnail_width">0dp</dimen>
     <dimen name="main_recycler_view_bottom_padding">24dp</dimen>
     <dimen name="main_title_padding_left">16dp</dimen>
@@ -25,7 +23,6 @@
 
     <!-- detail -->
     <dimen name="detail_title_text_size">36sp</dimen>
-    <dimen name="detail_author_text_size">18sp</dimen>
     <dimen name="detail_body_text_size">18sp</dimen>
     <item name="detail_body_line_spacing_multiplier" format="float" type="fraction">1.4</item>
     <dimen name="detail_back_button_width">56dp</dimen>
@@ -35,9 +32,5 @@
     <dimen name="fab_margin">24dp</dimen>
     <dimen name="fab_width">56dp</dimen>
     <dimen name="fab_height">@dimen/fab_width</dimen>
-    <dimen name="logo_start_margin">16dp</dimen>
-    <dimen name="logo_bottom_margin">16dp</dimen>
-
-    <dimen name="card_animation_offset">200dp</dimen>
 
 </resources>

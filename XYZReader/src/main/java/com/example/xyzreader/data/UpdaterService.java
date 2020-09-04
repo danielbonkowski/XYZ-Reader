@@ -1,14 +1,9 @@
 package com.example.xyzreader.data;
 
 import android.app.IntentService;
-import android.content.ContentProviderOperation;
-import android.content.ContentValues;
 import android.content.Intent;
-import android.content.OperationApplicationException;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.net.Uri;
-import android.os.RemoteException;
 import android.text.format.Time;
 import android.util.Log;
 
@@ -20,8 +15,6 @@ import com.example.xyzreader.remote.RemoteEndpointUtil;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.util.ArrayList;
 
 public class UpdaterService extends IntentService {
     private static final String TAG = "UpdaterService";
@@ -76,9 +69,9 @@ public class UpdaterService extends IntentService {
 
 
 
-                final Book book = new Book(Integer.valueOf(object.getString("id" )), object.getString("title" ),
+                final Book book = new Book(Integer.parseInt(object.getString("id" )), object.getString("title" ),
                         object.getString("author"),fullText, object.getString("thumb" ),
-                        object.getString("photo" ), Float.valueOf(object.getString("aspect_ratio" )),
+                        object.getString("photo" ), Float.parseFloat(object.getString("aspect_ratio" )),
                         object.getString("published_date" ));
 
                 AppExecutors.getInstance().diskIO().execute(new Runnable() {

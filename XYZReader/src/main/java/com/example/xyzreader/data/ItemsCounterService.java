@@ -6,6 +6,8 @@ import android.os.Bundle;
 
 import androidx.annotation.Nullable;
 
+import java.util.Objects;
+
 public class ItemsCounterService extends IntentService {
 
     private static final String TAG = "ItemsCounterService";
@@ -22,9 +24,9 @@ public class ItemsCounterService extends IntentService {
     @Override
     protected void onHandleIntent(@Nullable Intent intent) {
 
-            Bundle bundle = intent.getExtras();
-            String bookBody = bundle.getString(EXTRA_SETTING_UP_COUNTER);
-            String[] bookBodyArray = bookBody.split("\n\n");
+            Bundle bundle = Objects.requireNonNull(intent).getExtras();
+            String bookBody = Objects.requireNonNull(bundle).getString(EXTRA_SETTING_UP_COUNTER);
+            String[] bookBodyArray = Objects.requireNonNull(bookBody).split("\n\n");
 
             sendStickyBroadcast(new Intent(BROADCAST_ACTION_ITEMS_COUNTER).putExtra(EXTRA_SETTING_UP_COUNTER, bookBodyArray));
 
