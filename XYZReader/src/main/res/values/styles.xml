@@ -17,17 +17,15 @@
 
 <resources>
 
-    <style name="Theme.Bacon" parent="@style/Theme.AppCompat.Light.NoActionBar">
-
-    </style>
-
-    <style name="Theme.Bacon.Detail">
+    <style name="theme" parent="@style/Theme.AppCompat.Light.NoActionBar">
+        <item name="colorPrimary">@color/theme_primary</item>
+        <item name="colorPrimaryDark">@color/theme_primary_dark</item>
+        <item name="colorAccent">@color/theme_accent</item>
+        <item name="color">@color/theme_text</item>
         <item name="android:statusBarColor">@color/theme_primary_dark</item>
         <item name="android:windowActivityTransitions">true</item>
         <item name="android:windowContentTransitions">true</item>
         <item name="android:fontFamily">@font/roboto_regular</item>
-        <!--<item name="android:windowExitTransition">
-            @transition/article_list_exit</item>-->
     </style>
 
 </resources>
