@@ -17,4 +17,4 @@ as well as Android Emulator.
 
 ## License
 
-The contents of this repository are covered under the [MIT License] (./LICENSE.md).
+The contents of this repository are covered under the [MIT License](./LICENSE.md).
